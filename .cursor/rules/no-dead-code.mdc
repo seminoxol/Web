@@ -1,0 +1,49 @@
+---
+description: After every code change, remove any dead code left behind
+alwaysApply: true
+---
+
+# No Dead Code
+
+After every change, scan the affected files and remove anything that is now unreachable or unused.
+
+## What to delete
+
+- CSS classes defined but not referenced in any HTML or added by JS
+- JS variables, functions, or branches that can never execute
+- HTML attributes (`id`, `data-*`, `class`) with no corresponding CSS or JS usage
+- Unused imports or `require()` calls
+- Server middleware or routes that no longer serve a purpose
+
+## Examples
+
+```js
+// ❌ BAD — badge element doesn't exist in HTML, branch is dead
+const badge = document.querySelector('.about__badge-num');
+if (badge) animateValue(badge, parseInt(badge.dataset.target, 10));
+
+// ✅ GOOD — removed entirely
+```
+
+```css
+/* ❌ BAD — class never appears in HTML */
+.btn--outline-dark { ... }
+.btn--outline-dark:hover { ... }
+
+/* ✅ GOOD — deleted */
+```
+
+```html
+<!-- ❌ BAD — id never referenced by CSS or JS -->
+<section class="hero" id="hero">
+
+<!-- ✅ GOOD -->
+<section class="hero">
+```
+
+## When to check
+
+- After adding a new component or section — old one may be replaced
+- After renaming a CSS class — old name becomes dead
+- After refactoring JS logic — old branches may become unreachable
+- After removing an HTML element — its styles and event listeners become dead

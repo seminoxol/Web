@@ -1,0 +1,25 @@
+---
+description: PCI Glass project layout — read only the files relevant to your task
+alwaysApply: true
+---
+
+# PCI Glass — where things live
+
+| Path | Purpose |
+|------|---------|
+| `index.html` | Page markup & SEO |
+| `style.css` | CSS entry (`@import`s only) |
+| `css/tokens.css` | Palette, spacing, gradients |
+| `css/themes.css` | **Theme colors** — edit `--t-*` vars for dark/light |
+| `css/base.css` | Reset, grain, theme transition |
+| `css/components.css` | Layout & components (uses `var(--t-*)`) |
+| `css/responsive.css` | Breakpoints & reduced motion |
+| `js/site.js` | All frontend behavior (theme, nav, hero, gallery, form) |
+| `server.js` | Express app, static files, `/api/quote` |
+| `lib/email.js` | Quote email HTML templates |
+
+**Theme changes:** `css/themes.css` only.
+
+**Frontend behavior:** `js/site.js` only.
+
+**Ignore:** `node_modules/`

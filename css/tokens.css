@@ -1,0 +1,58 @@
+/* ─── Tokens (analogous blue: navy → turquoise → baby blue) ─── */
+:root {
+    /* Dark blue — dominant, trust & depth */
+    --navy-deep: #061528;
+    --navy: #0A2342;
+    --navy-mid: #0F3057;
+    --navy-light: #1A4A7A;
+
+    /* Turquoise — accent, CTAs & energy */
+    --turquoise: #2EC4B6;
+    --turquoise-bright: #4DD9CC;
+    --turquoise-dim: #1FA89C;
+    --turquoise-glow: rgba(46, 196, 182, 0.28);
+
+    /* Baby blue — soft tints & light surfaces */
+    --baby: #B8DCF0;
+    --baby-soft: #D4EBF7;
+    --baby-pale: #EBF5FB;
+
+    /* Polo blue — header */
+    --polo-blue: #6B94B8;
+    --polo-blue-light: #7FA5C6;
+    --polo-blue-dark: #587FA8;
+    --theme-surface-light: #EDE7DC;
+    --theme-surface-dark: var(--navy-deep);
+
+    /* Neutrals */
+    --white: #F4FAFD;
+    --text: var(--navy);
+    --muted: #5A7A94;
+    --muted-light: #8AABB8;
+    --border: rgba(184, 220, 240, 0.12);
+    --border-light: #C5DFF0;
+
+    /* Semantic aliases */
+    --dark-2: var(--navy-mid);
+
+    --font-display: 'Lora', Georgia, serif;
+    --font-body: 'Lora', Georgia, serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+    --header-h: 72px;
+    --wrap: 1280px;
+    --section-pad: clamp(56px, 7vw, 96px);
+    --space-block: clamp(28px, 4vw, 44px);
+    --space-element: clamp(16px, 2vw, 24px);
+
+    /* Section page gradients */
+    --grad-body:     var(--navy-deep);
+    --grad-marquee:  var(--navy-deep);
+    --grad-about:    var(--navy-deep);
+    --grad-services: var(--navy-deep);
+    --grad-products: var(--navy-deep);
+    --grad-gallery:  var(--navy-deep);
+    --grad-quote:    var(--navy-deep);
+    --grad-contact:  var(--navy-deep);
+    --grad-footer:   var(--navy-deep);
+}
