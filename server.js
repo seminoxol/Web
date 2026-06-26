@@ -41,16 +41,22 @@ app.post('/api/quote', quoteLimiter, async (req, res) => {
     const company = sanitize(req.body.company);
     const email = sanitize(req.body.email);
     const phone = sanitize(req.body.phone);
-    const dimensions = sanitize(req.body.dimensions);
     const message = sanitize(req.body.message);
-    const products = (Array.isArray(req.body.products) ? req.body.products : [req.body.products]).map(sanitize).filter(Boolean);
+    const items = (Array.isArray(req.body.items) ? req.body.items : [])
+        .slice(0, 10)
+        .map(item => ({
+            width: sanitize(item?.width),
+            height: sanitize(item?.height),
+            product: sanitize(item?.product),
+            type: sanitize(item?.type)
+        }))
+        .filter(item => item.width || item.height || item.product || item.type);
 
     if (!name || !email || !phone) return res.status(400).json({ error: 'Name, email and phone are required.' });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email address.' });
 
-    const productList = products.join(', ') || 'Not specified';
     const mailFrom = `"PCI Glass Website" <${process.env.EMAIL_USER}>`;
-    const payload = { name, company, email, phone, productList, dimensions, message };
+    const payload = { name, company, email, phone, items, message };
 
     try {
         await transporter.sendMail({

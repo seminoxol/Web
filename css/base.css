@@ -43,6 +43,144 @@ button { font: inherit; cursor: pointer; border: none; background: none; }
     .grain { display: none; }
 }
 
+/* ─── Site loader ─── */
+.site-loader {
+    overflow: hidden;
+    background: transparent;
+    pointer-events: none;
+}
+.site-loader__backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: var(--navy-deep);
+}
+.site-loader__curtain {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    z-index: 2;
+    background: var(--navy-deep);
+    will-change: transform;
+    visibility: hidden;
+}
+.site-loader__curtain--left { left: 0; }
+.site-loader__curtain--right { right: 0; }
+.site-loader.is-exiting .site-loader__backdrop { display: none; }
+.site-loader.is-exiting .site-loader__curtain { visibility: visible; }
+.site-loader__inner {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    width: min(320px, calc(100vw - 48px));
+    text-align: center;
+    transition: opacity 0.45s var(--ease), transform 0.45s var(--ease);
+}
+.site-loader__display {
+    margin: 0 0 4px;
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+}
+.site-loader__display-pci {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(3.5rem, 14vw, 6.5rem);
+    font-weight: 700;
+    color: var(--baby-pale);
+}
+.site-loader__display-glass {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+    font-weight: 600;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(184, 220, 240, 0.62);
+    margin-top: 8px;
+}
+.site-loader__ring {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    display: grid;
+    place-items: center;
+}
+.site-loader__ring::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid rgba(184, 220, 240, 0.14);
+    border-top-color: var(--polo-blue-light);
+    animation: site-loader-spin 0.9s linear infinite;
+}
+.site-loader__logo {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+}
+.site-loader__text {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(184, 220, 240, 0.82);
+}
+.site-loader__dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.site-loader__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(184, 220, 240, 0.2);
+    transition: background 0.35s var(--ease), transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+.site-loader__dot.is-filled {
+    background: var(--baby);
+    box-shadow: 0 0 10px rgba(184, 220, 240, 0.35);
+}
+.site-loader__dot.is-active {
+    transform: scale(1.25);
+    animation: site-loader-dot-pulse 1s ease-in-out infinite;
+}
+@keyframes site-loader-dot-pulse {
+    0%, 100% { opacity: 0.75; }
+    50% { opacity: 1; }
+}
+@keyframes site-loader-spin {
+    to { transform: rotate(360deg); }
+}
+.site-loader.is-exiting .site-loader__inner {
+    opacity: 0;
+    transform: scale(0.94);
+}
+.site-loader.is-exiting .site-loader__curtain--left {
+    transform: translateX(-100%);
+    transition: transform 1.15s cubic-bezier(0.85, 0, 0.15, 1);
+}
+.site-loader.is-exiting .site-loader__curtain--right {
+    transform: translateX(100%);
+    transition: transform 1.15s cubic-bezier(0.85, 0, 0.15, 1);
+}
+html.is-revealed .hero__copy {
+    animation: site-reveal-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+@keyframes site-reveal-up {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* ─── Theme transition ─── */
 .theme-overlay {
     position: fixed;
@@ -67,4 +205,16 @@ button { font: inherit; cursor: pointer; border: none; background: none; }
     .theme-overlay { transition-duration: 0.01ms; }
     ::view-transition-old(root),
     ::view-transition-new(root) { animation-duration: 0.01ms; }
-}
+    .site-loader { transition-duration: 0.01ms; }
+    .site-loader__ring::before { animation: none; }
+    .site-loader__dot { transition-duration: 0.01ms; }
+    .site-loader__dot.is-active { animation: none; }
+    .site-loader.is-exiting .site-loader__inner,
+    .site-loader.is-exiting .site-loader__curtain--left,
+    .site-loader.is-exiting .site-loader__curtain--right {
+        transition-duration: 0.01ms !important;
+        transform: none !important;
+        opacity: 1 !important;
+    }
+    html.is-revealed .hero__copy { animation: none; }
+}

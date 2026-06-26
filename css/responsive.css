@@ -69,13 +69,15 @@
 
     .products__head,
     .gallery__head { flex-direction: column; align-items: flex-start; }
-    .product-row { grid-template-columns: 1fr; gap: 4px; }
+    .product-row { grid-template-columns: 1fr auto; gap: 16px; }
+    .product-list--catalog .product-row__label { padding-right: 4px; }
 
     .contact__grid { grid-template-columns: 1fr; }
     .contact__details { grid-template-columns: 1fr; }
 
     .quote__layout { grid-template-columns: 1fr; }
-    .qf__row--two  { flex-direction: column; }
+    .qf__row--two { flex-direction: column; }
+    .qf-type-glass__grid { grid-template-columns: 1fr; }
     .qf__submit    { width: 100%; justify-content: center; }
 }
 
@@ -94,4 +96,4 @@
     .hero__slide--active .hero__img { animation: none; transform: none; }
     .hero__scroll-line { animation: none; }
     html { scroll-behavior: auto; }
-}
+}

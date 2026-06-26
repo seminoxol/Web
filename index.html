@@ -1,12 +1,154 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" class="is-loading">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        html.is-loading,
+        html.is-loading body {
+            overflow: hidden;
+            background: #061528;
+        }
+        html.is-loading body > *:not(#siteLoader) {
+            visibility: hidden;
+        }
+        #siteLoader {
+            position: fixed;
+            inset: 0;
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: transparent;
+            color: #b8dcf0;
+            font-family: Georgia, 'Times New Roman', serif;
+            pointer-events: none;
+        }
+        #siteLoader .site-loader__backdrop {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: #061528;
+        }
+        #siteLoader .site-loader__curtain {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 50%;
+            z-index: 2;
+            background: #061528;
+            visibility: hidden;
+        }
+        #siteLoader.is-exiting .site-loader__backdrop { display: none; }
+        #siteLoader.is-exiting .site-loader__curtain { visibility: visible; }
+        #siteLoader .site-loader__curtain--left { left: 0; }
+        #siteLoader .site-loader__curtain--right { right: 0; }
+        #siteLoader .site-loader__inner {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            width: min(320px, calc(100vw - 48px));
+            text-align: center;
+        }
+        #siteLoader .site-loader__display {
+            margin: 0 0 4px;
+            line-height: 0.9;
+            letter-spacing: -0.04em;
+        }
+        #siteLoader .site-loader__display-pci {
+            display: block;
+            font-size: clamp(3.5rem, 14vw, 6.5rem);
+            font-weight: 700;
+            color: #ebf5fb;
+        }
+        #siteLoader .site-loader__display-glass {
+            display: block;
+            font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+            font-weight: 600;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: rgba(184, 220, 240, 0.62);
+            margin-top: 8px;
+        }
+        #siteLoader .site-loader__ring {
+            position: relative;
+            width: 96px;
+            height: 96px;
+            display: grid;
+            place-items: center;
+        }
+        #siteLoader .site-loader__ring::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 3px solid rgba(184, 220, 240, 0.14);
+            border-top-color: #7fa5c6;
+            animation: site-loader-spin 0.9s linear infinite;
+        }
+        #siteLoader .site-loader__logo {
+            width: 56px;
+            height: 56px;
+            object-fit: contain;
+            position: relative;
+            z-index: 1;
+        }
+        #siteLoader .site-loader__text {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(184, 220, 240, 0.82);
+        }
+        #siteLoader .site-loader__dots {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        #siteLoader .site-loader__dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: rgba(184, 220, 240, 0.2);
+            transition: background 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+        }
+        #siteLoader .site-loader__dot.is-filled {
+            background: #b8dcf0;
+            box-shadow: 0 0 10px rgba(184, 220, 240, 0.35);
+        }
+        #siteLoader .site-loader__dot.is-active {
+            transform: scale(1.25);
+            animation: site-loader-dot-pulse 1s ease-in-out infinite;
+        }
+        @keyframes site-loader-dot-pulse {
+            0%, 100% { opacity: 0.75; }
+            50% { opacity: 1; }
+        }
+        @keyframes site-loader-spin { to { transform: rotate(360deg); } }
+        #siteLoader.is-exiting .site-loader__inner {
+            opacity: 0;
+            transform: scale(0.94);
+            transition: opacity 0.45s ease, transform 0.45s ease;
+        }
+        #siteLoader.is-exiting .site-loader__curtain--left {
+            transform: translateX(-100%);
+            transition: transform 1.15s cubic-bezier(0.85, 0, 0.15, 1);
+        }
+        #siteLoader.is-exiting .site-loader__curtain--right {
+            transform: translateX(100%);
+            transition: transform 1.15s cubic-bezier(0.85, 0, 0.15, 1);
+        }
+    </style>
 
     <!-- Primary SEO -->
     <title>PCI Glass — Insulated Glass Units &amp; Custom Glass | Scarborough, GTA</title>
-    <meta name="description" content="PCI Glass manufactures precision insulated glass units (IGUs), custom shaped glass, tempered glass, and warm-edge spacers in Scarborough, ON. Next-day delivery across the Greater Toronto Area. Call 416-297-5959.">
+    <meta name="description" content="PCI Glass manufactures precision insulated glass units (IGUs), custom shaped glass, tempered glass, and warm-edge spacers in Scarborough, ON. 7-day delivery across the Greater Toronto Area. Call 416-297-5959.">
     <meta name="keywords" content="insulated glass units, IGU, custom shaped glass, tempered glass, frosted glass, fluted glass, warm edge spacer, glass manufacturer, Scarborough, GTA, Toronto, double pane, triple pane, low-e glass">
     <meta name="author" content="Planet Construction Industry Glass">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
@@ -21,7 +163,7 @@
     <!-- Open Graph (Facebook, LinkedIn, Google previews) -->
     <meta property="og:type" content="business.business">
     <meta property="og:title" content="PCI Glass — Insulated Glass Units &amp; Custom Glass | Scarborough, GTA">
-    <meta property="og:description" content="Precision IGUs, custom shaped glass, tempered &amp; frosted glass manufactured in-house in Scarborough, ON. Next-day delivery across the GTA. Free quotes.">
+    <meta property="og:description" content="Precision IGUs, custom shaped glass, tempered &amp; frosted glass manufactured in-house in Scarborough, ON. 7-day delivery across the GTA. Free quotes.">
     <meta property="og:url" content="https://pciglass.ca/">
     <meta property="og:image" content="https://pciglass.ca/images/prod1.JPG">
     <meta property="og:image:width" content="1920">
@@ -40,7 +182,7 @@
     <!-- Twitter / X Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="PCI Glass — Custom Glass Manufacturer in Scarborough, GTA">
-    <meta name="twitter:description" content="Insulated glass units, custom shaped glass &amp; spacers. In-house manufacturing with next-day delivery across the Greater Toronto Area.">
+    <meta name="twitter:description" content="Insulated glass units, custom shaped glass &amp; spacers. In-house manufacturing with 7-day delivery across the Greater Toronto Area.">
     <meta name="twitter:image" content="https://pciglass.ca/images/prod1.JPG">
     <meta name="twitter:image:alt" content="PCI Glass manufacturing facility in Scarborough, Ontario">
 
@@ -57,7 +199,7 @@
       "@id": "https://pciglass.ca/#business",
       "name": "PCI Glass — Planet Construction Industry Glass",
       "alternateName": "PCI Glass",
-      "description": "PCI Glass manufactures precision insulated glass units (IGUs), custom shaped glass, tempered glass, frosted glass, fluted glass, rain glass, and warm-edge spacers in Scarborough, Ontario. Full in-house production with next-day delivery across the Greater Toronto Area.",
+      "description": "PCI Glass manufactures precision insulated glass units (IGUs), custom shaped glass, tempered glass, frosted glass, fluted glass, rain glass, and warm-edge spacers in Scarborough, Ontario. Full in-house production with 7-day delivery across the Greater Toronto Area.",
       "url": "https://pciglass.ca/",
       "logo": "https://pciglass.ca/images/pcilogo.png",
       "image": [
@@ -124,6 +266,29 @@
 </head>
 <body>
 
+    <div class="site-loader" id="siteLoader" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Loading page">
+        <div class="site-loader__backdrop" aria-hidden="true"></div>
+        <div class="site-loader__curtain site-loader__curtain--left" aria-hidden="true"></div>
+        <div class="site-loader__curtain site-loader__curtain--right" aria-hidden="true"></div>
+        <div class="site-loader__inner">
+            <p class="site-loader__display" aria-hidden="true">
+                <span class="site-loader__display-pci">PCI</span>
+                <span class="site-loader__display-glass">Glass</span>
+            </p>
+            <div class="site-loader__ring">
+                <img src="images/pcilogo.png" alt="" class="site-loader__logo" width="56" height="56" decoding="sync">
+            </div>
+            <p class="site-loader__text">Loading images</p>
+            <div class="site-loader__dots" aria-hidden="true">
+                <span class="site-loader__dot"></span>
+                <span class="site-loader__dot"></span>
+                <span class="site-loader__dot"></span>
+                <span class="site-loader__dot"></span>
+                <span class="site-loader__dot"></span>
+            </div>
+        </div>
+    </div>
+
     <div class="grain" aria-hidden="true"></div>
     <div class="theme-overlay" id="themeOverlay" aria-hidden="true"></div>
 
@@ -147,7 +312,7 @@
             </nav>
 
             <div class="header__actions">
-                <a href="tel:4162975959" class="header__phone">416-297-5959</a>
+                <a href="tel:+14162975959" class="header__phone">416-297-5959</a>
                 <a href="#quote" class="btn btn--accent">Get a Quote</a>
             </div>
 
@@ -182,16 +347,16 @@
                     <div class="hero__text hero__text--active">
                         <p class="eyebrow">Scarborough's Glass Manufacturer · Serving the GTA</p>
                         <h1 class="hero__title">Custom glass for<br><em>contractors &amp; builders.</em></h1>
-                        <p class="hero__lead">IGUs, tempered, frosted, custom-shaped glass &amp; spacers — manufactured in-house in Scarborough with next-day GTA delivery.</p>
+                        <p class="hero__lead">IGUs, tempered, frosted, custom-shaped glass &amp; spacers — manufactured in-house in Scarborough with 7-day GTA delivery.</p>
                         <ul class="hero__badges">
-                            <li>Next-Day Delivery</li>
+                            <li>7-Day Delivery</li>
                             <li>5-Year Warranty</li>
                             <li>Free Quotes</li>
                             <li>Residential &amp; Commercial</li>
                         </ul>
                     </div>
                     <div class="hero__text">
-                        <p class="eyebrow">Grand Opening — Limited Time</p>
+                        <p class="eyebrow">Promotional Pricing — Limited Time</p>
                         <p class="hero__title">Promotional<br><em>pricing now live.</em></p>
                         <p class="hero__lead">Special rates on IGUs and custom shaped glass for GTA contractors and homeowners. Request a free estimate today.</p>
                     </div>
@@ -232,12 +397,12 @@
     <div class="marquee" aria-hidden="true">
         <div class="marquee__track">
             <span>Craftsmanship</span><span class="marquee__dot">◆</span>
-            <span>Next-Day Delivery</span><span class="marquee__dot">◆</span>
+            <span>7-Day Delivery</span><span class="marquee__dot">◆</span>
             <span>5-Year Warranty</span><span class="marquee__dot">◆</span>
             <span>Competitive Pricing</span><span class="marquee__dot">◆</span>
             <span>In-House Manufacturing</span><span class="marquee__dot">◆</span>
             <span>Craftsmanship</span><span class="marquee__dot">◆</span>
-            <span>Next-Day Delivery</span><span class="marquee__dot">◆</span>
+            <span>7-Day Delivery</span><span class="marquee__dot">◆</span>
             <span>5-Year Warranty</span><span class="marquee__dot">◆</span>
             <span>Competitive Pricing</span><span class="marquee__dot">◆</span>
             <span>In-House Manufacturing</span><span class="marquee__dot">◆</span>
@@ -320,7 +485,7 @@
 
                 <div class="bento__stats">
                     <div class="bento__stat">
-                        <span class="bento__stat-val">24h</span>
+                        <span class="bento__stat-val">7 day</span>
                         <span class="bento__stat-key">Delivery</span>
                     </div>
                     <div class="bento__stat">
@@ -342,47 +507,137 @@
             <div class="products__head reveal">
                 <div>
                     <p class="eyebrow">Product Catalog</p>
-                    <h2 class="heading-lg">Glass &amp; spacer range</h2>
+                    <h2 class="heading-lg">Types of glass</h2>
                 </div>
                 <p class="body-lg products__intro">Every product below is available through our Scarborough factory. Bilingual support available for all inquiries.</p>
             </div>
 
-            <div class="product-list reveal">
-                <div class="product-row">
-                    <span class="product-row__name">3/4/5/6mm Clear &amp; Low-e Glass</span>
-                    <span class="product-row__cn">透明及低辐射玻璃</span>
+            <div class="product-list product-list--catalog reveal">
+                <div class="product-item">
+                    <button type="button" class="product-row" data-image="" aria-expanded="false" aria-controls="product-panel-0">
+                        <span class="product-row__label"><span class="product-row__name">3/4/5/6mm Clear &amp; Low-e Glass</span><span class="product-row__sep"> — </span><span class="product-row__cn">透明及低辐射玻璃</span></span>
+                        <span class="product-row__arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+                    </button>
+                    <div class="product-panel" id="product-panel-0" role="region" aria-hidden="true">
+                        <div class="product-panel__inner">
+                            <div class="product-panel__img-wrap">
+                                <img class="product-panel__img" alt="" hidden>
+                                <span class="product-panel__img-ph">Image goes here</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="product-row">
-                    <span class="product-row__name">Double-layer Insulated Glass Unit (IGU)</span>
-                    <span class="product-row__cn">双层中空玻璃单元</span>
+                <div class="product-item">
+                    <button type="button" class="product-row" data-image="" aria-expanded="false" aria-controls="product-panel-1">
+                        <span class="product-row__label"><span class="product-row__name">Double-layer Insulated Glass Unit (IGU)</span><span class="product-row__sep"> — </span><span class="product-row__cn">双层中空玻璃单元</span></span>
+                        <span class="product-row__arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+                    </button>
+                    <div class="product-panel" id="product-panel-1" role="region" aria-hidden="true">
+                        <div class="product-panel__inner">
+                            <div class="product-panel__img-wrap">
+                                <img class="product-panel__img" alt="" hidden>
+                                <span class="product-panel__img-ph">Image goes here</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="product-row">
-                    <span class="product-row__name">Triple Insulating Glass</span>
-                    <span class="product-row__cn">三层中空玻璃</span>
+                <div class="product-item">
+                    <button type="button" class="product-row" data-image="" aria-expanded="false" aria-controls="product-panel-2">
+                        <span class="product-row__label"><span class="product-row__name">Triple Insulating Glass</span><span class="product-row__sep"> — </span><span class="product-row__cn">三层中空玻璃</span></span>
+                        <span class="product-row__arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+                    </button>
+                    <div class="product-panel" id="product-panel-2" role="region" aria-hidden="true">
+                        <div class="product-panel__inner">
+                            <div class="product-panel__img-wrap">
+                                <img class="product-panel__img" alt="" hidden>
+                                <span class="product-panel__img-ph">Image goes here</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="product-row">
-                    <span class="product-row__name">Tempered Glass</span>
-                    <span class="product-row__cn">钢化玻璃</span>
+                <div class="product-item">
+                    <button type="button" class="product-row" data-image="" aria-expanded="false" aria-controls="product-panel-3">
+                        <span class="product-row__label"><span class="product-row__name">Tempered Glass</span><span class="product-row__sep"> — </span><span class="product-row__cn">钢化玻璃</span></span>
+                        <span class="product-row__arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+                    </button>
+                    <div class="product-panel" id="product-panel-3" role="region" aria-hidden="true">
+                        <div class="product-panel__inner">
+                            <div class="product-panel__img-wrap">
+                                <img class="product-panel__img" alt="" hidden>
+                                <span class="product-panel__img-ph">Image goes here</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="product-row">
-                    <span class="product-row__name">Frosted Glass</span>
-                    <span class="product-row__cn">磨砂玻璃</span>
+                <div class="product-item">
+                    <button type="button" class="product-row" data-image="" aria-expanded="false" aria-controls="product-panel-4">
+                        <span class="product-row__label"><span class="product-row__name">Frosted Glass</span><span class="product-row__sep"> — </span><span class="product-row__cn">磨砂玻璃</span></span>
+                        <span class="product-row__arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+                    </button>
+                    <div class="product-panel" id="product-panel-4" role="region" aria-hidden="true">
+                        <div class="product-panel__inner">
+                            <div class="product-panel__img-wrap">
+                                <img class="product-panel__img" alt="" hidden>
+                                <span class="product-panel__img-ph">Image goes here</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="product-row">
-                    <span class="product-row__name">Fluted Glass</span>
-                    <span class="product-row__cn">凹槽玻璃</span>
+                <div class="product-item">
+                    <button type="button" class="product-row" data-image="" aria-expanded="false" aria-controls="product-panel-5">
+                        <span class="product-row__label"><span class="product-row__name">Fluted Glass</span><span class="product-row__sep"> — </span><span class="product-row__cn">凹槽玻璃</span></span>
+                        <span class="product-row__arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+                    </button>
+                    <div class="product-panel" id="product-panel-5" role="region" aria-hidden="true">
+                        <div class="product-panel__inner">
+                            <div class="product-panel__img-wrap">
+                                <img class="product-panel__img" alt="" hidden>
+                                <span class="product-panel__img-ph">Image goes here</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="product-row">
-                    <span class="product-row__name">Rain Glass</span>
-                    <span class="product-row__cn">雨玻璃</span>
+                <div class="product-item">
+                    <button type="button" class="product-row" data-image="" aria-expanded="false" aria-controls="product-panel-6">
+                        <span class="product-row__label"><span class="product-row__name">Rain Glass</span><span class="product-row__sep"> — </span><span class="product-row__cn">雨玻璃</span></span>
+                        <span class="product-row__arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+                    </button>
+                    <div class="product-panel" id="product-panel-6" role="region" aria-hidden="true">
+                        <div class="product-panel__inner">
+                            <div class="product-panel__img-wrap">
+                                <img class="product-panel__img" alt="" hidden>
+                                <span class="product-panel__img-ph">Image goes here</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="product-row">
-                    <span class="product-row__name">Special-Shaped Glass</span>
-                    <span class="product-row__cn">异形玻璃</span>
+                <div class="product-item">
+                    <button type="button" class="product-row" data-image="" aria-expanded="false" aria-controls="product-panel-7">
+                        <span class="product-row__label"><span class="product-row__name">Special-Shaped Glass</span><span class="product-row__sep"> — </span><span class="product-row__cn">异形玻璃</span></span>
+                        <span class="product-row__arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+                    </button>
+                    <div class="product-panel" id="product-panel-7" role="region" aria-hidden="true">
+                        <div class="product-panel__inner">
+                            <div class="product-panel__img-wrap">
+                                <img class="product-panel__img" alt="" hidden>
+                                <span class="product-panel__img-ph">Image goes here</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="product-row">
-                    <span class="product-row__name">Warm Edge Spacer — Black &amp; White</span>
-                    <span class="product-row__cn">暖边隔条</span>
+                <div class="product-item">
+                    <button type="button" class="product-row" data-image="" aria-expanded="false" aria-controls="product-panel-8">
+                        <span class="product-row__label"><span class="product-row__name">Warm Edge Spacer — Black &amp; White</span><span class="product-row__sep"> — </span><span class="product-row__cn">暖边隔条</span></span>
+                        <span class="product-row__arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+                    </button>
+                    <div class="product-panel" id="product-panel-8" role="region" aria-hidden="true">
+                        <div class="product-panel__inner">
+                            <div class="product-panel__img-wrap">
+                                <img class="product-panel__img" alt="" hidden>
+                                <span class="product-panel__img-ph">Image goes here</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -461,22 +716,24 @@
 
                     <ul class="quote__contact-list">
                         <li>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.55a16 16 0 0 0 6.55 6.55l.91-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                            <div>
-                                <a href="tel:+14162975959">416-297-5959</a>
+                            <a class="quote__contact-link" href="tel:+14162975959">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.55a16 16 0 0 0 6.55 6.55l.91-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                <span class="quote__contact-text">416-297-5959</span>
                                 <span class="tag">EN / 粤</span>
-                            </div>
+                            </a>
                         </li>
                         <li>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.55a16 16 0 0 0 6.55 6.55l.91-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                            <div>
-                                <a href="tel:+16479788894">647-978-8894</a>
+                            <a class="quote__contact-link" href="tel:+16479788894">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.55a16 16 0 0 0 6.55 6.55l.91-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                <span class="quote__contact-text">647-978-8894</span>
                                 <span class="tag">中文</span>
-                            </div>
+                            </a>
                         </li>
                         <li>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                            <div><a href="mailto:Pciglass@gmail.com">Pciglass@gmail.com</a></div>
+                            <a class="quote__contact-link" href="mailto:Pciglass@gmail.com?subject=PCI%20Glass%20Quote%20Inquiry">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                <span class="quote__contact-text">Pciglass@gmail.com</span>
+                            </a>
                         </li>
                     </ul>
                     <p class="quote__cn">免费报价 — 一个工作日内回复</p>
@@ -506,18 +763,138 @@
                         </div>
                     </div>
 
-                    <div class="qf__field">
-                        <label>Products Needed</label>
-                        <div class="qf__checks">
-                            <label class="qf__check"><input type="checkbox" name="products" value="Insulated Glass Unit (IGU)"><span>IGU / Insulated Glass Unit</span></label>
-                            <label class="qf__check"><input type="checkbox" name="products" value="Windows"><span>Windows</span></label>
-                            <label class="qf__check"><input type="checkbox" name="products" value="Doors"><span>Doors</span></label>
+                    <div class="qf__entry">
+                        <div class="qf__row qf__row--two">
+                            <div class="qf__field">
+                                <label for="qf-width">Width</label>
+                                <input type="text" id="qf-width" inputmode="decimal" autocomplete="off" placeholder="e.g. 36">
+                            </div>
+                            <div class="qf__field">
+                                <label for="qf-height">Height</label>
+                                <input type="text" id="qf-height" inputmode="decimal" autocomplete="off" placeholder="e.g. 60">
+                            </div>
                         </div>
+                        <div class="qf__row qf__row--two">
+                            <div class="qf__field">
+                                <label id="qf-product-label">Product</label>
+                                <div class="qf-picker" id="qfProductPicker">
+                                    <input type="hidden" id="qf-product" value="">
+                                    <button type="button" class="qf-picker__trigger" aria-labelledby="qf-product-label" aria-haspopup="listbox" aria-expanded="false">
+                                        <span class="qf-picker__value qf-picker__value--placeholder">Select product</span>
+                                        <svg class="qf-picker__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <div class="qf-picker__panel" hidden>
+                                        <ul class="qf-picker__list" role="listbox"></ul>
+                                        <div class="qf-picker__scroll-track" aria-hidden="true" hidden>
+                                            <div class="qf-picker__scroll-rail">
+                                                <span class="qf-picker__scroll-seg"></span>
+                                                <span class="qf-picker__scroll-seg"></span>
+                                                <span class="qf-picker__scroll-seg"></span>
+                                                <span class="qf-picker__scroll-seg"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="qf__field qf__field--type">
+                                <label id="qf-type-label">Type</label>
+                                <div class="qf-type-panel qf-type-panel--standard" id="qfTypeStandard">
+                                    <div class="qf-picker qf-picker--disabled" id="qfTypePicker">
+                                        <input type="hidden" id="qf-type" value="">
+                                        <button type="button" class="qf-picker__trigger" aria-labelledby="qf-type-label" aria-haspopup="listbox" aria-expanded="false" disabled>
+                                            <span class="qf-picker__value qf-picker__value--placeholder">Select product first</span>
+                                            <svg class="qf-picker__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                                        </button>
+                                        <div class="qf-picker__panel" hidden>
+                                            <ul class="qf-picker__list" role="listbox"></ul>
+                                            <div class="qf-picker__scroll-track" aria-hidden="true" hidden>
+                                                <div class="qf-picker__scroll-rail">
+                                                    <span class="qf-picker__scroll-seg"></span>
+                                                    <span class="qf-picker__scroll-seg"></span>
+                                                    <span class="qf-picker__scroll-seg"></span>
+                                                    <span class="qf-picker__scroll-seg"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="qf-type-panel qf-type-panel--glass" id="qfTypeGlass" hidden>
+                                    <div class="qf-type-glass__grid">
+                                        <div class="qf__field">
+                                            <label id="qf-glass-type-label">Glass</label>
+                                            <div class="qf-picker qf-picker--disabled" id="qfGlassTypePicker">
+                                                <input type="hidden" id="qf-glass-type" value="">
+                                                <button type="button" class="qf-picker__trigger" aria-labelledby="qf-glass-type-label" aria-haspopup="listbox" aria-expanded="false" disabled>
+                                                    <span class="qf-picker__value qf-picker__value--placeholder">Select glass</span>
+                                                    <svg class="qf-picker__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                                                </button>
+                                                <div class="qf-picker__panel" hidden>
+                                                    <ul class="qf-picker__list" role="listbox"></ul>
+                                                    <div class="qf-picker__scroll-track" aria-hidden="true" hidden>
+                                                        <div class="qf-picker__scroll-rail">
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="qf__field">
+                                            <label id="qf-pane-label">Pane</label>
+                                            <div class="qf-picker qf-picker--disabled" id="qfPanePicker">
+                                                <input type="hidden" id="qf-pane" value="">
+                                                <button type="button" class="qf-picker__trigger" aria-labelledby="qf-pane-label" aria-haspopup="listbox" aria-expanded="false" disabled>
+                                                    <span class="qf-picker__value qf-picker__value--placeholder">Select pane</span>
+                                                    <svg class="qf-picker__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                                                </button>
+                                                <div class="qf-picker__panel" hidden>
+                                                    <ul class="qf-picker__list" role="listbox"></ul>
+                                                    <div class="qf-picker__scroll-track" aria-hidden="true" hidden>
+                                                        <div class="qf-picker__scroll-rail">
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="qf__field">
+                                            <label id="qf-thickness-label">Thickness</label>
+                                            <div class="qf-picker qf-picker--disabled" id="qfThicknessPicker">
+                                                <input type="hidden" id="qf-thickness" value="">
+                                                <button type="button" class="qf-picker__trigger" aria-labelledby="qf-thickness-label" aria-haspopup="listbox" aria-expanded="false" disabled>
+                                                    <span class="qf-picker__value qf-picker__value--placeholder">Select thickness</span>
+                                                    <svg class="qf-picker__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                                                </button>
+                                                <div class="qf-picker__panel" hidden>
+                                                    <ul class="qf-picker__list" role="listbox"></ul>
+                                                    <div class="qf-picker__scroll-track" aria-hidden="true" hidden>
+                                                        <div class="qf-picker__scroll-rail">
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                            <span class="qf-picker__scroll-seg"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="qf__add-item" id="qfAddItem" disabled>Add item</button>
                     </div>
 
-                    <div class="qf__field">
-                        <label for="qf-dimensions">Dimensions / Quantity</label>
-                        <input type="text" id="qf-dimensions" name="dimensions" placeholder="e.g. 36&quot; × 60&quot;, qty 12 — or leave blank if unknown">
+                    <div class="qf__inquiry-wrap">
+                        <span class="qf__inquiry-heading">Inquiry list</span>
+                        <div class="qf__inquiry-list" id="qfInquiryList">
+                            <p class="qf__inquiry-empty" id="qfInquiryEmpty">No items added yet.</p>
+                        </div>
                     </div>
 
                     <div class="qf__field">
@@ -564,7 +941,7 @@
                         </div>
                         <div class="contact__item">
                             <span class="contact__label">Email</span>
-                            <p><a href="mailto:Pciglass@gmail.com">Pciglass@gmail.com</a></p>
+                            <p><a href="mailto:Pciglass@gmail.com?subject=PCI%20Glass%20Inquiry">Pciglass@gmail.com</a></p>
                         </div>
                     </address>
                 </div>

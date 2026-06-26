@@ -1,16 +1,10 @@
-/* ─── Tokens (analogous blue: navy → turquoise → baby blue) ─── */
+/* ─── Tokens (navy → polo blue → baby blue) ─── */
 :root {
     /* Dark blue — dominant, trust & depth */
     --navy-deep: #061528;
     --navy: #0A2342;
     --navy-mid: #0F3057;
     --navy-light: #1A4A7A;
-
-    /* Turquoise — accent, CTAs & energy */
-    --turquoise: #2EC4B6;
-    --turquoise-bright: #4DD9CC;
-    --turquoise-dim: #1FA89C;
-    --turquoise-glow: rgba(46, 196, 182, 0.28);
 
     /* Baby blue — soft tints & light surfaces */
     --baby: #B8DCF0;
