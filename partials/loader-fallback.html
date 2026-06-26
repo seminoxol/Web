@@ -1,0 +1,15 @@
+    <script>
+        (function () {
+            function runLoaderExit() {
+                if (typeof window.__pciPlayLoaderExit === 'function') {
+                    window.__pciPlayLoaderExit();
+                }
+            }
+
+            window.addEventListener('load', function () {
+                setTimeout(function () {
+                    if (!document.documentElement.classList.contains('is-revealed')) runLoaderExit();
+                }, 5000);
+            });
+        })();
+    </script>

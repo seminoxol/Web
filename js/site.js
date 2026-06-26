@@ -1,9 +1,10 @@
 const THEME_MS = 520;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const LOADER_MAX_MS = 8000;
-const LOADER_MIN_MS = 180;
-const LOADER_HOLD_MS = 120;
-const LOADER_REVEAL_MS = 550;
+const LOADER_MAX_MS = 3500;
+const LOADER_MIN_MS = 1100;
+const LOADER_HOLD_MS = 450;
+const LOADER_CURTAIN_MS = 2200;
+const LOADER_REVEAL_MS = LOADER_CURTAIN_MS + 200;
 const LOADER_OPEN_AT = 100;
 const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const loadImage = img => {
@@ -12,7 +13,20 @@ const loadImage = img => {
     img.removeAttribute('data-src');
 };
 
-const collectCriticalImageUrls = () => ['images/pcilogo.png'];
+const collectCriticalImageUrls = () => ['/images/pcilogo.png'];
+
+const initInternalNavSkipLoader = () => {
+    document.querySelectorAll('a[href]').forEach(a => {
+        const href = a.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || a.target) return;
+        try {
+            const url = new URL(href, location.origin);
+            if (url.origin === location.origin) {
+                a.addEventListener('click', () => sessionStorage.setItem('pci-skip-loader', '1'));
+            }
+        } catch (_) {}
+    });
+};
 
 const preloadImageUrl = url => new Promise(resolve => {
     const img = new Image();
@@ -22,79 +36,146 @@ const preloadImageUrl = url => new Promise(resolve => {
     img.src = url;
 });
 
-const initSiteLoader = async () => {
-    const loader = document.getElementById('siteLoader');
-    const dots = loader ? [...loader.querySelectorAll('.site-loader__dot')] : [];
-    const root = document.documentElement;
-    if (!loader) return void root.classList.remove('is-loading');
+const initFaqAccordion = () => {
+    const faqAccordion = document.getElementById('faqAccordion');
+    if (!faqAccordion || faqAccordion.dataset.faqReady === '1') return;
+    faqAccordion.dataset.faqReady = '1';
 
-    root.setAttribute('aria-busy', 'true');
-    const urls = collectCriticalImageUrls();
-    const total = urls.length || 1;
-    let loaded = 0;
-    const dotCount = dots.length || 1;
-    const setProgress = pct => {
-        const clamped = Math.min(100, Math.max(0, pct));
-        loader.setAttribute('aria-valuenow', String(clamped));
-        const filled = Math.ceil((clamped / 100) * dotCount);
-        dots.forEach((dot, i) => {
-            dot.classList.toggle('is-filled', i < filled);
-            dot.classList.toggle('is-active', i === filled - 1 && clamped > 0 && clamped < 100);
-        });
-    };
-
-    setProgress(0);
-
-    const started = performance.now();
-    await new Promise(resolve => {
-        let settled = false;
-        const finish = () => {
-            if (settled) return;
-            settled = true;
-            resolve();
-        };
-
-        const timeout = setTimeout(finish, LOADER_MAX_MS);
-        if (!urls.length) {
-            clearTimeout(timeout);
-            finish();
-            return;
+    faqAccordion.querySelectorAll('.faq-answer').forEach(answer => {
+        if (!answer.closest('.faq-item')?.classList.contains('is-open')) {
+            answer.setAttribute('aria-hidden', 'true');
         }
-
-        urls.forEach(url => {
-            preloadImageUrl(url).then(() => {
-                loaded += 1;
-                setProgress(Math.round((loaded / total) * 100));
-                if (Math.round((loaded / total) * 100) >= LOADER_OPEN_AT) finish();
-            });
-        });
     });
 
-    const elapsed = performance.now() - started;
-    if (!prefersReducedMotion && elapsed < LOADER_MIN_MS) {
-        await new Promise(resolve => setTimeout(resolve, LOADER_MIN_MS - elapsed));
-    }
+    const closeFaqItem = btn => {
+        const answer = document.getElementById(btn.getAttribute('aria-controls'));
+        if (!answer) return;
+        btn.setAttribute('aria-expanded', 'false');
+        answer.setAttribute('aria-hidden', 'true');
+        btn.closest('.faq-item')?.classList.remove('is-open');
+    };
 
-    if (prefersReducedMotion) {
-        root.classList.remove('is-loading');
-        root.removeAttribute('aria-busy');
-        loader.remove();
-        return;
-    }
+    faqAccordion.querySelectorAll('.faq-question').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const isOpen = btn.getAttribute('aria-expanded') === 'true';
+            faqAccordion.querySelectorAll('.faq-question').forEach(other => {
+                if (other !== btn) closeFaqItem(other);
+            });
+            if (isOpen) {
+                closeFaqItem(btn);
+                return;
+            }
+            const answer = document.getElementById(btn.getAttribute('aria-controls'));
+            if (!answer) return;
+            btn.setAttribute('aria-expanded', 'true');
+            answer.setAttribute('aria-hidden', 'false');
+            btn.closest('.faq-item')?.classList.add('is-open');
+        });
+    });
+};
 
-    await new Promise(resolve => setTimeout(resolve, LOADER_HOLD_MS));
+const playLoaderExit = async () => {
+    const loader = document.getElementById('siteLoader');
+    const root = document.documentElement;
+    if (!loader || root.classList.contains('is-revealed') || loader.classList.contains('is-exiting')) return;
+
     loader.classList.add('is-exiting');
-    root.classList.remove('is-loading');
-    root.classList.add('is-revealed');
     loader.setAttribute('aria-hidden', 'true');
     root.removeAttribute('aria-busy');
+
+    await new Promise(resolve => setTimeout(resolve, LOADER_HOLD_MS));
+    root.classList.remove('is-loading');
+    root.classList.add('is-revealed');
 
     await new Promise(resolve => setTimeout(resolve, LOADER_REVEAL_MS));
     loader.remove();
 };
 
+window.__pciPlayLoaderExit = playLoaderExit;
+
+const initSiteLoader = async () => {
+    const loader = document.getElementById('siteLoader');
+    const dots = loader ? [...loader.querySelectorAll('.site-loader__dot')] : [];
+    const root = document.documentElement;
+
+    const finishLoader = () => {
+        root.classList.remove('is-loading');
+        root.classList.add('is-revealed');
+        root.removeAttribute('aria-busy');
+        loader?.setAttribute('aria-hidden', 'true');
+        loader?.remove();
+    };
+
+    if (sessionStorage.getItem('pci-skip-loader') === '1') {
+        sessionStorage.removeItem('pci-skip-loader');
+        finishLoader();
+        return;
+    }
+
+    if (!loader) return finishLoader();
+
+    try {
+        root.setAttribute('aria-busy', 'true');
+        const urls = collectCriticalImageUrls();
+        const total = urls.length || 1;
+        let loaded = 0;
+        const dotCount = dots.length || 1;
+        const setProgress = pct => {
+            const clamped = Math.min(100, Math.max(0, pct));
+            loader.setAttribute('aria-valuenow', String(clamped));
+            const filled = Math.ceil((clamped / 100) * dotCount);
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('is-filled', i < filled);
+                dot.classList.toggle('is-active', i === filled - 1 && clamped > 0 && clamped < 100);
+            });
+        };
+
+        setProgress(0);
+
+        const started = performance.now();
+        await new Promise(resolve => {
+            let settled = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                resolve();
+            };
+
+            const timeout = setTimeout(finish, LOADER_MAX_MS);
+            if (!urls.length) {
+                clearTimeout(timeout);
+                finish();
+                return;
+            }
+
+            urls.forEach(url => {
+                preloadImageUrl(url).then(() => {
+                    loaded += 1;
+                    setProgress(Math.round((loaded / total) * 100));
+                    if (Math.round((loaded / total) * 100) >= LOADER_OPEN_AT) finish();
+                });
+            });
+        });
+
+        const elapsed = performance.now() - started;
+        if (!prefersReducedMotion && elapsed < LOADER_MIN_MS) {
+            await new Promise(resolve => setTimeout(resolve, LOADER_MIN_MS - elapsed));
+        }
+
+        if (prefersReducedMotion) return finishLoader();
+
+        await new Promise(resolve => setTimeout(resolve, LOADER_HOLD_MS));
+        await playLoaderExit();
+    } catch {
+        finishLoader();
+    }
+};
+
 (async () => {
-    initSiteLoader();
+    await initSiteLoader();
+    initInternalNavSkipLoader();
+
+    try {
 
     const html = document.documentElement;
     const themeBtn = document.getElementById('themeBtn');
@@ -105,47 +186,54 @@ const initSiteLoader = async () => {
         html.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
         const isDark = theme === 'dark';
-        themeIconDark.classList.toggle('is-visible', isDark);
-        themeIconDark.classList.toggle('is-hidden', !isDark);
-        themeIconLight.classList.toggle('is-visible', !isDark);
-        themeIconLight.classList.toggle('is-hidden', isDark);
-        themeBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+        themeIconDark?.classList.toggle('is-visible', isDark);
+        themeIconDark?.classList.toggle('is-hidden', !isDark);
+        themeIconLight?.classList.toggle('is-visible', !isDark);
+        themeIconLight?.classList.toggle('is-hidden', isDark);
+        themeBtn?.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
     };
 
     const applyTheme = (theme, animate) => {
         const update = () => setTheme(theme);
         if (!animate || prefersReducedMotion) return update();
         if (document.startViewTransition) return document.startViewTransition(update);
+        if (!themeOverlay) return update();
         themeOverlay.style.backgroundColor = theme === 'light' ? '#EDE7DC' : '#061528';
         themeOverlay.classList.add('is-active');
         setTimeout(() => (update(), themeOverlay.classList.remove('is-active')), THEME_MS);
     };
 
     applyTheme(localStorage.getItem('theme') ?? 'dark', false);
-    themeBtn.addEventListener('click', () => applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true));
+    themeBtn?.addEventListener('click', () => applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true));
 
     const header = document.getElementById('header');
     const menuBtn = document.getElementById('menuBtn');
     const nav = document.getElementById('nav');
     let scrollPending = false;
 
-    window.addEventListener('scroll', () => {
-        if (scrollPending) return;
-        scrollPending = true;
-        requestAnimationFrame(() => (header.classList.toggle('header--scrolled', scrollY > 60), scrollPending = false));
-    }, { passive: true });
-    header.classList.toggle('header--scrolled', scrollY > 60);
+    if (header) {
+        const isSolid = header.classList.contains('header--solid');
+        const syncHeader = () => {
+            if (!isSolid) header.classList.toggle('header--scrolled', scrollY > 60);
+        };
+        window.addEventListener('scroll', () => {
+            if (scrollPending || isSolid) return;
+            scrollPending = true;
+            requestAnimationFrame(() => (syncHeader(), scrollPending = false));
+        }, { passive: true });
+        syncHeader();
+    }
 
     const setMenuOpen = open => {
-        nav.classList.toggle('nav--open', open);
-        menuBtn.classList.toggle('menu-btn--open', open);
-        menuBtn.setAttribute('aria-expanded', String(open));
-        menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        nav?.classList.toggle('nav--open', open);
+        menuBtn?.classList.toggle('menu-btn--open', open);
+        menuBtn?.setAttribute('aria-expanded', String(open));
+        menuBtn?.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
         document.body.style.overflow = open ? 'hidden' : '';
     };
 
-    menuBtn.addEventListener('click', () => setMenuOpen(!nav.classList.contains('nav--open')));
-    nav.querySelectorAll('.nav__link').forEach(link => link.addEventListener('click', () => setMenuOpen(false)));
+    menuBtn?.addEventListener('click', () => setMenuOpen(!nav?.classList.contains('nav--open')));
+    nav?.querySelectorAll('.nav__link').forEach(link => link.addEventListener('click', () => setMenuOpen(false)));
 
     const imageSlides = document.querySelectorAll('.hero__slide');
     const textSlides = document.querySelectorAll('.hero__text');
@@ -165,17 +253,21 @@ const initSiteLoader = async () => {
     };
 
     const goTo = index => {
-        if (index === current) return armTimer();
+        if (!imageSlides.length) return;
+        const next = ((index % imageSlides.length) + imageSlides.length) % imageSlides.length;
+        if (next === current) return armTimer();
         slideSets.forEach((set, i) => set[current].classList.remove(activeClasses[i]));
-        current = index;
+        current = next;
         loadImage(imageSlides[current].querySelector('.hero__img'));
         slideSets.forEach((set, i) => set[current].classList.add(activeClasses[i]));
         armTimer();
     };
 
     tabs.forEach(tab => tab.addEventListener('click', () => goTo(+tab.dataset.slide)));
-    armTimer();
-    (requestIdleCallback ?? (cb => setTimeout(cb, 1500)))(() => loadImage(imageSlides[1]?.querySelector('.hero__img[data-src]')), requestIdleCallback ? { timeout: 2000 } : undefined);
+    if (imageSlides.length) {
+        armTimer();
+        (requestIdleCallback ?? (cb => setTimeout(cb, 1500)))(() => loadImage(imageSlides[1]?.querySelector('.hero__img[data-src]')), requestIdleCallback ? { timeout: 2000 } : undefined);
+    }
 
     let counted = false;
     const runCounters = () => {
@@ -183,6 +275,7 @@ const initSiteLoader = async () => {
         counted = true;
         const inline = document.querySelector('.inline-stat');
         if (!inline) return;
+        inline.textContent = '0+';
         const target = +inline.dataset.target, start = performance.now();
         const tick = now => {
             const t = Math.min((now - start) / 1400, 1);
@@ -210,6 +303,8 @@ const initSiteLoader = async () => {
     document.querySelectorAll('.reveal').forEach(el => revealIo.observe(el));
 
     const productCatalog = document.querySelector('.product-list--catalog');
+    const productClickAt = new WeakMap();
+    const PRODUCT_CLICK_MS = 700;
 
     const setProductPanelImage = (item, btn) => {
         const img = item.querySelector('.product-panel__img');
@@ -220,8 +315,9 @@ const initSiteLoader = async () => {
         if (src) {
             img.src = src;
             img.alt = alt;
-            img.loading = 'lazy';
+            img.loading = 'eager';
             img.decoding = 'async';
+            img.draggable = false;
             img.hidden = false;
             ph.hidden = true;
         } else {
@@ -231,105 +327,40 @@ const initSiteLoader = async () => {
         }
     };
 
-    const PANEL_ANIM_MS = 800;
-    const PANEL_WIDTH_DELAY_MS = 120;
-
-    const getWrapFullWidth = wrap => {
-        const inner = wrap?.closest('.product-panel__inner');
-        return inner ? Math.min(inner.clientWidth, 640) : 640;
-    };
-
-    const resetWrapWidth = wrap => {
-        if (!wrap) return;
-        wrap.classList.remove('is-fitted');
-        wrap.style.removeProperty('width');
-        wrap.style.removeProperty('transition');
-    };
-
-    const fitWrapToImage = item => {
-        const wrap = item.querySelector('.product-panel__img-wrap');
-        const img = item.querySelector('.product-panel__img');
-        if (!wrap || !img || img.hidden) return;
-
-        const applyFit = () => {
-            const fullW = getWrapFullWidth(wrap);
-            const targetW = img.getBoundingClientRect().width;
-            if (!targetW) return;
-            resetWrapWidth(wrap);
-            wrap.style.width = `${fullW}px`;
-            requestAnimationFrame(() => {
-                wrap.classList.add('is-fitted');
-                wrap.style.width = `${targetW}px`;
-            });
-        };
-
-        if (img.complete) applyFit();
-        else img.addEventListener('load', applyFit, { once: true });
-    };
-
-    const finishProductClose = item => {
-        item.classList.remove('is-closing');
-        resetWrapWidth(item.querySelector('.product-panel__img-wrap'));
-    };
-
     const closeProductItem = item => {
-        if (!item.classList.contains('is-open')) return;
         const btn = item.querySelector('.product-row');
         const panel = item.querySelector('.product-panel');
-        const wrap = item.querySelector('.product-panel__img-wrap');
-        const hasImage = Boolean(item.querySelector('.product-panel__img:not([hidden])'));
-
+        item.classList.remove('is-open');
         btn?.setAttribute('aria-expanded', 'false');
         panel?.setAttribute('aria-hidden', 'true');
+    };
 
-        if (!hasImage || !panel || !wrap) {
-            item.classList.remove('is-open');
-            finishProductClose(item);
-            return;
-        }
-
-        const fullW = getWrapFullWidth(wrap);
-        const narrowW = wrap.getBoundingClientRect().width;
-
-        wrap.classList.add('is-fitted');
-        wrap.style.width = `${narrowW}px`;
-        wrap.style.transition = `width ${PANEL_ANIM_MS}ms cubic-bezier(0.22, 1, 0.36, 1) ${PANEL_WIDTH_DELAY_MS}ms`;
-        item.classList.add('is-closing');
-        item.classList.remove('is-open');
-
-        let done = false;
-        const cleanup = () => {
-            if (done) return;
-            done = true;
-            finishProductClose(item);
-        };
-
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                wrap.style.width = `${fullW}px`;
-            });
-        });
-        wrap.addEventListener('transitionend', e => {
-            if (e.propertyName === 'width') cleanup();
-        }, { once: true });
-        setTimeout(cleanup, PANEL_ANIM_MS + PANEL_WIDTH_DELAY_MS + 50);
+    const openProductItem = (item, btn) => {
+        item.classList.add('is-open');
+        btn.setAttribute('aria-expanded', 'true');
+        item.querySelector('.product-panel')?.setAttribute('aria-hidden', 'false');
+        setProductPanelImage(item, btn);
     };
 
     if (productCatalog) {
         productCatalog.querySelectorAll('.product-item').forEach(item => {
             const btn = item.querySelector('.product-row');
-            btn?.addEventListener('click', () => {
-                const wasOpen = item.classList.contains('is-open');
-                productCatalog.querySelectorAll('.product-item.is-open').forEach(closeProductItem);
-                if (!wasOpen) {
-                    productCatalog.querySelectorAll('.product-item.is-closing').forEach(finishProductClose);
-                    item.classList.remove('is-closing');
-                    item.classList.add('is-open');
-                    btn.setAttribute('aria-expanded', 'true');
-                    item.querySelector('.product-panel')?.setAttribute('aria-hidden', 'false');
-                    setProductPanelImage(item, btn);
-                    fitWrapToImage(item);
-                }
+            btn?.addEventListener('click', e => {
+                e.preventDefault();
+
+                const now = performance.now();
+                const last = productClickAt.get(item) ?? 0;
+                if (now - last < PRODUCT_CLICK_MS) return;
+                productClickAt.set(item, now);
+
+                const isOpen = item.classList.contains('is-open');
+
+                productCatalog.querySelectorAll('.product-item.is-open').forEach(other => {
+                    if (other !== item) closeProductItem(other);
+                });
+
+                if (isOpen) closeProductItem(item);
+                else openProductItem(item, btn);
             });
         });
         document.addEventListener('keydown', e => {
@@ -412,23 +443,18 @@ const initSiteLoader = async () => {
             }));
         };
 
-        prevBtn.addEventListener('click', () => goToPage(page - 1));
-        nextBtn.addEventListener('click', () => goToPage(page + 1));
-        window.addEventListener('resize', () => (clearTimeout(resizeTimer), resizeTimer = setTimeout(() => (buildDots(), updateGallery(true)), 150)), { passive: true });
         let galleryReady = false;
         const initGallery = () => {
             if (galleryReady) return;
             galleryReady = true;
             buildDots();
-            updateGallery();
+            updateGallery(true);
         };
-        const galleryIo = new IntersectionObserver(entries => {
-            if (entries.some(({ isIntersecting }) => isIntersecting)) {
-                initGallery();
-                galleryIo.disconnect();
-            }
-        }, { rootMargin: '320px' });
-        galleryIo.observe(galleryCarousel);
+
+        prevBtn.addEventListener('click', () => (initGallery(), goToPage(page - 1)));
+        nextBtn.addEventListener('click', () => (initGallery(), goToPage(page + 1)));
+        window.addEventListener('resize', () => (clearTimeout(resizeTimer), resizeTimer = setTimeout(() => (initGallery(), buildDots(), updateGallery(true)), 150)), { passive: true });
+        requestAnimationFrame(() => requestAnimationFrame(initGallery));
         }
     }
 
@@ -475,7 +501,9 @@ const initSiteLoader = async () => {
         { value: 'Frosted', name: 'Frosted', cn: '磨砂' },
         { value: 'Fluted', name: 'Fluted', cn: '凹槽' },
         { value: 'Rain', name: 'Rain', cn: '雨纹' },
-        { value: 'Special-Shaped', name: 'Special-Shaped', cn: '异形' }
+        { value: 'Acid Etch', name: 'Acid Etch', cn: '酸蚀' },
+        { value: 'Special-Shaped', name: 'Special-Shaped', cn: '异形' },
+        { value: 'Other', name: 'Other', cn: '其他' }
     ];
     const PANE_OPTIONS = [
         { value: 'Single Pane', name: 'Single Pane', cn: '单层玻璃' },
@@ -919,4 +947,14 @@ const initSiteLoader = async () => {
             }
         });
     }
+
+    } catch (err) {
+        console.error('Site init error:', err);
+        if (!document.documentElement.classList.contains('is-revealed')) {
+            document.documentElement.classList.remove('is-loading');
+            document.documentElement.classList.add('is-revealed');
+        }
+    }
+
+    initFaqAccordion();
 })();

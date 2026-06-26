@@ -1,0 +1,25 @@
+{
+  "name": "PCI Glass — Insulated Glass Units & Custom Glass",
+  "short_name": "PCI Glass",
+  "description": "Custom insulated glass units and specialty glass manufacturing in Scarborough, Ontario. 7-day GTA delivery.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0A2342",
+  "theme_color": "#0A2342",
+  "lang": "en-CA",
+  "icons": [
+    {
+      "src": "/images/pcilogo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/pcilogo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

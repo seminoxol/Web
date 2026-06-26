@@ -1,4 +1,5 @@
 /* Theme tokens — edit colors here; components use var(--t-*) */
+:root,
 [data-theme="dark"] {
     --t-fg: var(--white);
     --t-fg-muted: rgba(184, 220, 240, 0.72);
@@ -35,8 +36,9 @@
     --t-dot-hover: rgba(184, 220, 240, 0.3);
     --t-form-bg: rgba(14, 20, 30, 0.92);
     --t-form-border: rgba(184, 220, 240, 0.12);
-    --t-form-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
-    --t-form-blur: blur(16px);
+    --t-form-shadow: 0 20px 60px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.12);
+    --t-form-blur: none;
+    --t-faq-card-shadow: 0 20px 60px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.1);
     --t-label: rgba(184, 220, 240, 0.55);
     --t-input-bg: rgba(184, 220, 240, 0.06);
     --t-input-border: rgba(184, 220, 240, 0.14);
@@ -80,6 +82,8 @@
     --t-form-btn-fg: var(--white);
     --t-form-btn-hover-bg: var(--polo-blue);
     --t-form-btn-hover-border: var(--polo-blue-dark);
+    --t-quote-btn-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 10px 32px rgba(127, 165, 198, 0.2);
+    --t-quote-btn-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.22), 0 16px 40px rgba(127, 165, 198, 0.28);
     --t-bento-stat-val: var(--baby);
     --t-marquee-dot: var(--baby);
     --t-marquee-track: rgba(184, 220, 240, 0.45);
@@ -99,6 +103,15 @@
     background: var(--t-header-scrolled-bg);
     border-bottom-color: var(--t-header-scrolled-border);
     box-shadow: var(--t-header-scrolled-shadow);
+}
+[data-theme="dark"] .header--solid {
+    background: var(--t-header-scrolled-bg);
+    border-bottom-color: var(--t-header-scrolled-border);
+    box-shadow: var(--t-header-scrolled-shadow);
+}
+[data-theme="dark"] .footer {
+    background: #040e1a;
+    border-top-color: rgba(184, 220, 240, 0.14);
 }
 [data-theme="dark"] .hero .eyebrow {
     display: inline-block;
@@ -186,6 +199,7 @@
     --t-form-border: #CEC4B8;
     --t-form-shadow: 0 8px 40px rgba(44, 36, 22, 0.08);
     --t-form-blur: none;
+    --t-faq-card-shadow: 0 16px 48px rgba(44, 36, 22, 0.06), 0 4px 12px rgba(44, 36, 22, 0.04);
     --t-label: #7A6D5E;
     --t-input-bg: #E8DFD3;
     --t-input-border: #CEC4B8;
@@ -229,6 +243,8 @@
     --t-form-btn-fg: #FFFBF5;
     --t-form-btn-hover-bg: var(--brown-mid);
     --t-form-btn-hover-border: var(--brown-mid);
+    --t-quote-btn-shadow: 0 2px 8px rgba(44, 36, 22, 0.1), 0 8px 24px rgba(44, 36, 22, 0.08);
+    --t-quote-btn-hover-shadow: 0 4px 12px rgba(44, 36, 22, 0.12), 0 12px 32px rgba(44, 36, 22, 0.1);
     --t-bento-stat-val: var(--brown-mid);
     --t-marquee-dot: var(--brown-soft);
     --t-marquee-track: #7A6D5E;
@@ -297,6 +313,75 @@
 [data-theme="light"] .bento__stat-key { color: #7A6D5E; }
 [data-theme="light"] .brand--footer .brand__name { color: #2C2416; }
 [data-theme="light"] .brand--footer .brand__logo { mix-blend-mode: normal; }
+
+[data-theme="light"] .products__intro,
+[data-theme="light"] .gallery__intro {
+    color: #5A4E3E;
+}
+
+[data-theme="light"] .faq-page-head__meta a {
+    color: var(--brown-mid);
+}
+
+[data-theme="light"] .faq {
+    background: transparent;
+}
+
+[data-theme="light"] .faq-panel,
+[data-theme="light"] .faq-cta__card {
+    background: #F0EAE0;
+    border-color: #CEC4B8;
+    box-shadow: var(--t-faq-card-shadow);
+}
+
+[data-theme="light"] .faq-page-head__chips li {
+    background: rgba(44, 36, 22, 0.05);
+    border-color: #CEC4B8;
+    color: #5A4E3E;
+}
+
+[data-theme="light"] .faq-question {
+    color: #2C2416;
+}
+
+[data-theme="light"] .faq-question:hover,
+[data-theme="light"] .faq-item.is-open .faq-question {
+    color: var(--brown-mid);
+}
+
+[data-theme="light"] .faq-question__toggle {
+    color: var(--brown-mid);
+    border-color: #CEC4B8;
+    background: rgba(44, 36, 22, 0.05);
+}
+
+[data-theme="light"] .faq-item {
+    border-bottom-color: #CEC4B8;
+}
+
+[data-theme="light"] .faq-item.is-open {
+    background: rgba(44, 36, 22, 0.04);
+}
+
+[data-theme="light"] .faq-answer p {
+    color: #5A4E3E;
+}
+
+[data-theme="light"] .faq-answer strong {
+    color: #2C2416;
+}
+
+[data-theme="light"] .faq-answer a {
+    color: var(--brown-mid);
+}
+
+[data-theme="light"] .faq-cta__copy .heading-lg {
+    color: #2C2416;
+}
+
+[data-theme="light"] .faq-cta__copy .eyebrow {
+    color: #5A4E3E;
+}
 
 @media (max-width: 768px) {
     [data-theme="light"] .nav {

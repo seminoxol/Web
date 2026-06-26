@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="is-revealed">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page not found — PCI Glass</title>
+    <meta name="robots" content="noindex">
+    <link rel="icon" type="image/png" href="/images/pcilogo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;600;700&display=swap">
+    <link rel="stylesheet" href="/style.css?v=16">
+    <script>
+        try {
+            const t = localStorage.getItem('theme');
+            if (t) document.documentElement.setAttribute('data-theme', t);
+        } catch (_) {}
+    </script>
+</head>
+<body class="legal-page">
+
+    <div class="grain" aria-hidden="true"></div>
+    <div class="theme-overlay" id="themeOverlay" aria-hidden="true"></div>
+
+    <!-- @include header -->
+
+    <main id="main">
+        <section class="legal-hero section">
+            <div class="wrap">
+                <p class="eyebrow">404</p>
+                <h1 class="heading-lg">Page not found</h1>
+                <p class="body-lg legal-hero__lead">The page you requested does not exist or may have moved.</p>
+            </div>
+        </section>
+
+        <section class="legal section">
+            <div class="wrap legal__content">
+                <p>Return to the <a href="/">homepage</a>, browse our <a href="/faq/">FAQ</a>, or <a href="/#quote">request a quote</a>.</p>
+                <p>Need help right away? Call <a href="tel:+14162975959">416-297-5959</a>.</p>
+            </div>
+        </section>
+    </main>
+
+    <div class="mobile-bar" aria-label="Quick actions">
+        <a href="tel:+14162975959" class="mobile-bar__btn mobile-bar__btn--call">Call 416-297-5959</a>
+        <a href="/#quote" class="mobile-bar__btn mobile-bar__btn--quote">Get a Quote</a>
+    </div>
+
+    <!-- @include footer -->
+
+    <script src="/js/site.js?v=16" defer></script>
+</body>
+</html>

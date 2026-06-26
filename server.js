@@ -3,14 +3,16 @@ const express = require('express');
 const compression = require('compression');
 const nodemailer = require('nodemailer');
 const path = require('path');
+const fs = require('fs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { ownerEmail, customerEmail } = require('./lib/email');
 const { isEmailConfigured, saveQuoteLocally } = require('./lib/quotes');
+const { renderPage } = require('./lib/pages');
 
 const app = express();
 const ROOT = __dirname;
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const mailConfigured = isEmailConfigured();
 const sanitize = v => typeof v === 'string' ? v.replace(/<[^>]*>/g, '').trim().slice(0, 1000) : '';
 const quoteLimiter = rateLimit({ windowMs: 900000, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many requests. Please try again in 15 minutes.' } });
@@ -67,14 +69,51 @@ app.get('/sitemap.xml', (_, res) => {
     res.type('application/xml');
     res.sendFile(path.join(ROOT, 'sitemap.xml'));
 });
+app.get('/site.webmanifest', (_, res) => {
+    res.type('application/manifest+json');
+    res.sendFile(path.join(ROOT, 'site.webmanifest'));
+});
+
+const CSS_BUNDLE = [
+    'css/tokens.css',
+    'css/base.css',
+    'css/components.css',
+    'css/themes.css',
+    'css/responsive.css',
+];
+
+const buildStylesheet = () => CSS_BUNDLE
+    .map(file => fs.readFileSync(path.join(ROOT, file), 'utf8'))
+    .join('\n');
 
 app.get('/style.css', (_, res) => {
-    res.set('Cache-Control', 'public, max-age=86400');
-    res.sendFile(path.join(ROOT, 'style.css'));
+    res.type('text/css');
+    res.set('Cache-Control', 'no-cache');
+    res.send(buildStylesheet());
 });
-app.use('/css', express.static(path.join(ROOT, 'css'), staticOpts('7d')));
-app.use('/js', express.static(path.join(ROOT, 'js'), staticOpts('7d')));
+app.use('/css', express.static(path.join(ROOT, 'css'), {
+    ...staticOpts('1h'),
+    setHeaders(res, filePath) {
+        res.setHeader('Cache-Control', 'no-cache');
+        if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache');
+        }
+    }
+}));
+app.use('/js', express.static(path.join(ROOT, 'js'), {
+    ...staticOpts('1h'),
+    setHeaders(res, filePath) {
+        res.setHeader('Cache-Control', 'no-cache');
+        if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache');
+        }
+    }
+}));
 app.use('/images', express.static(path.join(ROOT, 'images'), staticOpts('30d')));
+
+app.get('/api/health', (_, res) => {
+    res.json({ ok: true, emailReady: mailConfigured });
+});
 
 app.get('/api/quote/status', (_, res) => {
     res.json({ emailReady: mailConfigured });
@@ -130,10 +169,46 @@ app.post('/api/quote', quoteLimiter, async (req, res) => {
     }
 });
 
+const sendHtml = (res, file, opts = {}) => {
+    res.set('Cache-Control', 'no-cache');
+    res.type('html').send(renderPage(file, opts));
+};
+
+app.get('/', (_, res) => sendHtml(res, 'index.html'));
+app.get('/index.html', (_, res) => sendHtml(res, 'index.html'));
+app.get('/faq/', (_, res) => sendHtml(res, path.join('faq', 'index.html'), {
+    header: { solid: true, activePage: 'faq' },
+    footer: { activePage: 'faq' }
+}));
+app.get('/faq', (_, res) => res.redirect(301, '/faq/'));
+app.get('/faq.html', (_, res) => res.redirect(301, '/faq/'));
+app.get('/terms/', (_, res) => sendHtml(res, path.join('terms', 'index.html'), {
+    header: { solid: true },
+    footer: { activePage: 'terms' }
+}));
+app.get('/terms', (_, res) => res.redirect(301, '/terms/'));
+app.get('/terms.html', (_, res) => res.redirect(301, '/terms/'));
+app.get('/privacy/', (_, res) => sendHtml(res, path.join('privacy', 'index.html'), {
+    header: { solid: true },
+    footer: { activePage: 'privacy' }
+}));
+app.get('/privacy', (_, res) => res.redirect(301, '/privacy/'));
+app.get('/privacy.html', (_, res) => res.redirect(301, '/privacy/'));
+
 app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found.' });
-    res.set('Cache-Control', 'no-cache');
-    res.sendFile(path.join(ROOT, 'index.html'));
+    const base = path.basename(req.path);
+    if (base.endsWith('.html')) {
+        if (base === 'faq.html') return res.redirect(301, '/faq/');
+        if (base === 'terms.html') return res.redirect(301, '/terms/');
+        if (base === 'privacy.html') return res.redirect(301, '/privacy/');
+        const file = path.resolve(ROOT, base);
+        if (file.startsWith(ROOT) && fs.existsSync(file) && base !== '404.html') {
+            return sendHtml(res, base);
+        }
+    }
+    res.status(404);
+    sendHtml(res, '404.html', { header: { solid: true } });
 });
 
 app.listen(PORT, () => {

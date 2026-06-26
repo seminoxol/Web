@@ -40,7 +40,7 @@ Then edit `.env` and fill in:
 | `EMAIL_USER` | Gmail address that sends emails |
 | `EMAIL_PASS` | Gmail App Password (not your regular password) |
 | `EMAIL_TO` | Where quote emails are delivered |
-| `PORT` | Server port (default: 3000) |
+| `PORT` | Server port (default: 8080) |
 
 **How to get a Gmail App Password:**
 1. Go to [myaccount.google.com](https://myaccount.google.com)
@@ -58,7 +58,7 @@ npm start
 npm run dev
 ```
 
-Open http://localhost:3000
+Open http://localhost:8080
 
 ---
 
