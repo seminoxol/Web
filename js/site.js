@@ -1,23 +1,18 @@
 const THEME_MS = 520;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const LOADER_MAX_MS = 15000;
-const LOADER_MIN_MS = 400;
-const LOADER_HOLD_MS = 450;
-const LOADER_REVEAL_MS = 1200;
-const LOADER_OPEN_AT = 70;
+const LOADER_MAX_MS = 8000;
+const LOADER_MIN_MS = 180;
+const LOADER_HOLD_MS = 120;
+const LOADER_REVEAL_MS = 550;
+const LOADER_OPEN_AT = 100;
 const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const loadImage = img => img?.dataset.src && (img.src = img.dataset.src, img.removeAttribute('data-src'));
-
-const collectPageImageUrls = () => {
-    const urls = new Set();
-    document.querySelectorAll('img[src], img[data-src]').forEach(img => {
-        if (img.closest('#siteLoader')) return;
-        if (img.getAttribute('loading') === 'lazy') return;
-        const src = (img.getAttribute('data-src') || img.getAttribute('src'))?.trim();
-        if (src) urls.add(src);
-    });
-    return [...urls];
+const loadImage = img => {
+    if (!img?.dataset.src) return;
+    img.src = img.dataset.src;
+    img.removeAttribute('data-src');
 };
+
+const collectCriticalImageUrls = () => ['images/pcilogo.png'];
 
 const preloadImageUrl = url => new Promise(resolve => {
     const img = new Image();
@@ -34,7 +29,7 @@ const initSiteLoader = async () => {
     if (!loader) return void root.classList.remove('is-loading');
 
     root.setAttribute('aria-busy', 'true');
-    const urls = collectPageImageUrls();
+    const urls = collectCriticalImageUrls();
     const total = urls.length || 1;
     let loaded = 0;
     const dotCount = dots.length || 1;
@@ -121,7 +116,7 @@ const initSiteLoader = async () => {
         const update = () => setTheme(theme);
         if (!animate || prefersReducedMotion) return update();
         if (document.startViewTransition) return document.startViewTransition(update);
-        themeOverlay.style.backgroundColor = theme === 'light' ? '#F5EFE6' : '#061528';
+        themeOverlay.style.backgroundColor = theme === 'light' ? '#EDE7DC' : '#061528';
         themeOverlay.classList.add('is-active');
         setTimeout(() => (update(), themeOverlay.classList.remove('is-active')), THEME_MS);
     };
@@ -200,10 +195,11 @@ const initSiteLoader = async () => {
     const lazyIo = new IntersectionObserver(entries => entries.forEach(({ isIntersecting, target: el }) => {
         if (!isIntersecting) return;
         if (el.dataset.bg) (el.style.backgroundImage = `url('${el.dataset.bg}')`, el.classList.add('bento__bg--loaded'), el.removeAttribute('data-bg'));
+        else if (el.tagName === 'IMG' && el.dataset.src) loadImage(el);
         else if (el.tagName === 'IFRAME' && el.dataset.src) (el.src = el.dataset.src, el.removeAttribute('data-src'));
         lazyIo.unobserve(el);
     }), { rootMargin: '200px' });
-    document.querySelectorAll('[data-bg], iframe[data-src]').forEach(el => lazyIo.observe(el));
+    document.querySelectorAll('[data-bg], iframe[data-src], img[data-src]:not(.gallery__cell img)').forEach(el => lazyIo.observe(el));
 
     const revealIo = new IntersectionObserver(entries => entries.forEach(({ isIntersecting, target: el }) => {
         if (!isIntersecting) return;
@@ -224,6 +220,8 @@ const initSiteLoader = async () => {
         if (src) {
             img.src = src;
             img.alt = alt;
+            img.loading = 'lazy';
+            img.decoding = 'async';
             img.hidden = false;
             ph.hidden = true;
         } else {
@@ -233,12 +231,88 @@ const initSiteLoader = async () => {
         }
     };
 
+    const PANEL_ANIM_MS = 800;
+    const PANEL_WIDTH_DELAY_MS = 120;
+
+    const getWrapFullWidth = wrap => {
+        const inner = wrap?.closest('.product-panel__inner');
+        return inner ? Math.min(inner.clientWidth, 640) : 640;
+    };
+
+    const resetWrapWidth = wrap => {
+        if (!wrap) return;
+        wrap.classList.remove('is-fitted');
+        wrap.style.removeProperty('width');
+        wrap.style.removeProperty('transition');
+    };
+
+    const fitWrapToImage = item => {
+        const wrap = item.querySelector('.product-panel__img-wrap');
+        const img = item.querySelector('.product-panel__img');
+        if (!wrap || !img || img.hidden) return;
+
+        const applyFit = () => {
+            const fullW = getWrapFullWidth(wrap);
+            const targetW = img.getBoundingClientRect().width;
+            if (!targetW) return;
+            resetWrapWidth(wrap);
+            wrap.style.width = `${fullW}px`;
+            requestAnimationFrame(() => {
+                wrap.classList.add('is-fitted');
+                wrap.style.width = `${targetW}px`;
+            });
+        };
+
+        if (img.complete) applyFit();
+        else img.addEventListener('load', applyFit, { once: true });
+    };
+
+    const finishProductClose = item => {
+        item.classList.remove('is-closing');
+        resetWrapWidth(item.querySelector('.product-panel__img-wrap'));
+    };
+
     const closeProductItem = item => {
-        item.classList.remove('is-open');
+        if (!item.classList.contains('is-open')) return;
         const btn = item.querySelector('.product-row');
         const panel = item.querySelector('.product-panel');
+        const wrap = item.querySelector('.product-panel__img-wrap');
+        const hasImage = Boolean(item.querySelector('.product-panel__img:not([hidden])'));
+
         btn?.setAttribute('aria-expanded', 'false');
         panel?.setAttribute('aria-hidden', 'true');
+
+        if (!hasImage || !panel || !wrap) {
+            item.classList.remove('is-open');
+            finishProductClose(item);
+            return;
+        }
+
+        const fullW = getWrapFullWidth(wrap);
+        const narrowW = wrap.getBoundingClientRect().width;
+
+        wrap.classList.add('is-fitted');
+        wrap.style.width = `${narrowW}px`;
+        wrap.style.transition = `width ${PANEL_ANIM_MS}ms cubic-bezier(0.22, 1, 0.36, 1) ${PANEL_WIDTH_DELAY_MS}ms`;
+        item.classList.add('is-closing');
+        item.classList.remove('is-open');
+
+        let done = false;
+        const cleanup = () => {
+            if (done) return;
+            done = true;
+            finishProductClose(item);
+        };
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                wrap.style.width = `${fullW}px`;
+            });
+        });
+        wrap.addEventListener('transitionend', e => {
+            if (e.propertyName === 'width') cleanup();
+        }, { once: true });
+        setTimeout(cleanup, PANEL_ANIM_MS + PANEL_WIDTH_DELAY_MS + 50);
     };
 
     if (productCatalog) {
@@ -248,10 +322,13 @@ const initSiteLoader = async () => {
                 const wasOpen = item.classList.contains('is-open');
                 productCatalog.querySelectorAll('.product-item.is-open').forEach(closeProductItem);
                 if (!wasOpen) {
+                    productCatalog.querySelectorAll('.product-item.is-closing').forEach(finishProductClose);
+                    item.classList.remove('is-closing');
                     item.classList.add('is-open');
                     btn.setAttribute('aria-expanded', 'true');
                     item.querySelector('.product-panel')?.setAttribute('aria-hidden', 'false');
                     setProductPanelImage(item, btn);
+                    fitWrapToImage(item);
                 }
             });
         });
@@ -269,12 +346,18 @@ const initSiteLoader = async () => {
         if (track && prevBtn && nextBtn && status && cells.length) {
         const GAP = 12;
         const CELL_EXTRA_H = 5;
-        let page = 0, resizeTimer;
+        let page = 0, resizeTimer, isGalleryAnimating = false;
 
         const perPage = () => innerWidth < 600 ? 1 : innerWidth < 1024 ? 2 : 3;
         const totalPages = () => Math.ceil(cells.length / perPage());
 
-        const updateGallery = () => {
+        const loadGalleryCellImage = cell => {
+            const img = cell.querySelector('img[data-src]');
+            if (img) loadImage(img);
+        };
+
+        const updateGallery = (instant = false) => {
+            if (instant) galleryCarousel.classList.add('is-resizing');
             const per = perPage(), maxPage = totalPages() - 1;
             page = Math.min(page, maxPage);
             const vw = galleryCarousel.querySelector('.gallery__viewport').offsetWidth;
@@ -283,18 +366,37 @@ const initSiteLoader = async () => {
             const isPartial = visibleCount < per;
             const standardW = (vw - GAP * (per - 1)) / per;
             const activeW = isPartial ? (vw - GAP * (visibleCount - 1)) / visibleCount : standardW;
+            const offset = startIdx * (standardW + GAP);
             cells.forEach((cell, i) => {
                 const onPage = i >= startIdx && i < startIdx + visibleCount;
                 const w = isPartial && onPage ? activeW : standardW;
                 cell.style.width = `${w}px`;
                 cell.style.height = `${w * 2 / 3 + CELL_EXTRA_H}px`;
+                if (onPage) loadGalleryCellImage(cell);
             });
-            track.style.transform = `translate3d(-${startIdx * (standardW + GAP)}px, 0, 0)`;
-            prevBtn.disabled = page === 0;
-            nextBtn.disabled = page >= maxPage;
+            track.style.transform = `translate3d(-${offset}px, 0, 0)`;
+            prevBtn.disabled = page === 0 || isGalleryAnimating;
+            nextBtn.disabled = page >= maxPage || isGalleryAnimating;
             status.textContent = `Showing ${page * per + 1}–${Math.min((page + 1) * per, cells.length)} of ${cells.length}`;
             dotsContainer?.querySelectorAll('.gallery__dot').forEach((dot, i) => (dot.classList.toggle('gallery__dot--active', i === page), dot.setAttribute('aria-selected', i === page)));
+            if (instant) requestAnimationFrame(() => galleryCarousel.classList.remove('is-resizing'));
         };
+
+        const goToPage = nextPage => {
+            const maxPage = totalPages() - 1;
+            const target = Math.max(0, Math.min(nextPage, maxPage));
+            if (target === page || isGalleryAnimating) return;
+            isGalleryAnimating = true;
+            page = target;
+            updateGallery();
+        };
+
+        track.addEventListener('transitionend', e => {
+            if (e.target !== track || e.propertyName !== 'transform') return;
+            isGalleryAnimating = false;
+            prevBtn.disabled = page === 0;
+            nextBtn.disabled = page >= totalPages() - 1;
+        });
 
         const buildDots = () => {
             if (!dotsContainer) return;
@@ -305,16 +407,28 @@ const initSiteLoader = async () => {
                 dot.setAttribute('aria-label', `Go to page ${i + 1}`);
                 dot.setAttribute('role', 'tab');
                 dot.setAttribute('aria-selected', i === page);
-                dot.addEventListener('click', () => (page = i, updateGallery()));
+                dot.addEventListener('click', () => goToPage(i));
                 return dot;
             }));
         };
 
-        prevBtn.addEventListener('click', () => page > 0 && (page--, updateGallery()));
-        nextBtn.addEventListener('click', () => page < totalPages() - 1 && (page++, updateGallery()));
-        window.addEventListener('resize', () => (clearTimeout(resizeTimer), resizeTimer = setTimeout(() => (buildDots(), updateGallery()), 150)), { passive: true });
-        buildDots();
-        updateGallery();
+        prevBtn.addEventListener('click', () => goToPage(page - 1));
+        nextBtn.addEventListener('click', () => goToPage(page + 1));
+        window.addEventListener('resize', () => (clearTimeout(resizeTimer), resizeTimer = setTimeout(() => (buildDots(), updateGallery(true)), 150)), { passive: true });
+        let galleryReady = false;
+        const initGallery = () => {
+            if (galleryReady) return;
+            galleryReady = true;
+            buildDots();
+            updateGallery();
+        };
+        const galleryIo = new IntersectionObserver(entries => {
+            if (entries.some(({ isIntersecting }) => isIntersecting)) {
+                initGallery();
+                galleryIo.disconnect();
+            }
+        }, { rootMargin: '320px' });
+        galleryIo.observe(galleryCarousel);
         }
     }
 
@@ -332,6 +446,7 @@ const initSiteLoader = async () => {
     const qfAddItem = document.getElementById('qfAddItem');
     const qfInquiryList = document.getElementById('qfInquiryList');
     const qfInquiryEmpty = document.getElementById('qfInquiryEmpty');
+    const qfStatus = document.getElementById('qfStatus');
     const PRODUCT_OPTIONS = [
         { value: 'Glass', name: 'Glass', cn: '玻璃' },
         { value: 'Window', name: 'Window', cn: '窗户' },
@@ -354,7 +469,8 @@ const initSiteLoader = async () => {
         ]
     };
     const GLASS_TYPE_OPTIONS = [
-        { value: 'Clear & Low-e', name: 'Clear & Low-e', cn: '透明及低辐射' },
+        { value: 'Clear', name: 'Clear', cn: '透明' },
+        { value: 'Low-e', name: 'Low-e', cn: '低辐射' },
         { value: 'Tempered', name: 'Tempered', cn: '钢化' },
         { value: 'Frosted', name: 'Frosted', cn: '磨砂' },
         { value: 'Fluted', name: 'Fluted', cn: '凹槽' },
@@ -406,11 +522,11 @@ const initSiteLoader = async () => {
         const syncPickerListHeight = () => {
             if (!list) return;
             const rows = [...list.querySelectorAll('.qf-picker__option')];
-            if (!rows.length) {
+            if (!rows.length || !picker.classList.contains('is-open')) {
                 list.style.removeProperty('max-height');
                 return;
             }
-            const rowH = Math.max(...rows.map(row => row.getBoundingClientRect().height));
+            const rowH = Math.max(...rows.map(row => row.getBoundingClientRect().height), 36);
             list.style.maxHeight = `${rowH * PICKER_VISIBLE_ROWS + 12}px`;
         };
 
@@ -475,7 +591,6 @@ const initSiteLoader = async () => {
 
         const reset = (placeholderText = placeholder) => {
             setValue('', '', placeholderText);
-            list.replaceChildren();
             closePicker(picker);
         };
 
@@ -488,7 +603,10 @@ const initSiteLoader = async () => {
             list.scrollTop = 0;
             trigger.setAttribute('aria-expanded', 'true');
             openPicker = picker;
-            requestAnimationFrame(updateScrollRail);
+            requestAnimationFrame(() => {
+                updateScrollRail();
+                requestAnimationFrame(updateScrollRail);
+            });
         });
 
         reset();
@@ -506,17 +624,17 @@ const initSiteLoader = async () => {
     }) : null;
 
     const glassTypePicker = qfGlassTypePicker ? initPicker(qfGlassTypePicker, {
-        placeholder: 'Select glass',
+        placeholder: 'Choose type',
         onSelect: () => updateAddItemBtn()
     }) : null;
 
     const panePicker = qfPanePicker ? initPicker(qfPanePicker, {
-        placeholder: 'Select pane',
+        placeholder: 'Choose pane',
         onSelect: () => updateAddItemBtn()
     }) : null;
 
     const thicknessPicker = qfThicknessPicker ? initPicker(qfThicknessPicker, {
-        placeholder: 'Select thickness',
+        placeholder: 'Choose mm',
         onSelect: () => updateAddItemBtn()
     }) : null;
 
@@ -530,12 +648,16 @@ const initSiteLoader = async () => {
             if (qfTypeGlass) qfTypeGlass.hidden = true;
             typePicker?.setDisabled(true);
             typePicker?.reset('Select product first');
+            typePicker?.renderOptions([]);
             glassTypePicker?.setDisabled(true);
             panePicker?.setDisabled(true);
             thicknessPicker?.setDisabled(true);
-            glassTypePicker?.reset('Select glass');
-            panePicker?.reset('Select pane');
-            thicknessPicker?.reset('Select thickness');
+            glassTypePicker?.reset('Choose type');
+            panePicker?.reset('Choose pane');
+            thicknessPicker?.reset('Choose mm');
+            glassTypePicker?.renderOptions([]);
+            panePicker?.renderOptions([]);
+            thicknessPicker?.renderOptions([]);
             updateAddItemBtn();
             return;
         }
@@ -546,19 +668,22 @@ const initSiteLoader = async () => {
             glassTypePicker?.setDisabled(false);
             panePicker?.setDisabled(false);
             thicknessPicker?.setDisabled(false);
+            glassTypePicker?.reset('Choose type');
+            panePicker?.reset('Choose pane');
+            thicknessPicker?.reset('Choose mm');
             glassTypePicker?.renderOptions(GLASS_TYPE_OPTIONS);
             panePicker?.renderOptions(PANE_OPTIONS);
             thicknessPicker?.renderOptions(THICKNESS_OPTIONS);
-            glassTypePicker?.reset('Select glass');
-            panePicker?.reset('Select pane');
-            thicknessPicker?.reset('Select thickness');
         } else {
             glassTypePicker?.setDisabled(true);
             panePicker?.setDisabled(true);
             thicknessPicker?.setDisabled(true);
-            glassTypePicker?.reset('Select glass');
-            panePicker?.reset('Select pane');
-            thicknessPicker?.reset('Select thickness');
+            glassTypePicker?.reset('Choose type');
+            panePicker?.reset('Choose pane');
+            thicknessPicker?.reset('Choose mm');
+            glassTypePicker?.renderOptions([]);
+            panePicker?.renderOptions([]);
+            thicknessPicker?.renderOptions([]);
             const types = TYPE_OPTIONS[product] ?? [];
             typePicker?.reset(product ? 'Select type' : 'Select product first');
             typePicker?.renderOptions(types);
@@ -580,12 +705,60 @@ const initSiteLoader = async () => {
         if (e.key === 'Escape') closeAllPickers();
     });
 
+    const isValidDim = value => {
+        const n = parseFloat(value);
+        return Number.isFinite(n) && n > 0;
+    };
+
     const isEntryComplete = () => {
-        if (!qfWidth?.value.trim() || !qfHeight?.value.trim() || !productPicker?.getValue()) return false;
+        if (!isValidDim(qfWidth?.value) || !isValidDim(qfHeight?.value) || !productPicker?.getValue()) return false;
         if (productPicker.getValue() === 'Glass') {
             return Boolean(glassTypePicker?.getValue() && panePicker?.getValue() && thicknessPicker?.getValue());
         }
         return Boolean(typePicker?.getValue());
+    };
+
+    const addCurrentItem = () => {
+        if (!productPicker || !isEntryComplete() || inquiryItems.length >= MAX_QUOTE_ITEMS) return false;
+        const product = productPicker.getValue();
+        const base = {
+            width: qfWidth.value.trim(),
+            height: qfHeight.value.trim(),
+            product
+        };
+        if (product === 'Glass') {
+            const glassType = glassTypePicker?.getValue();
+            const pane = panePicker?.getValue();
+            const thickness = thicknessPicker?.getValue();
+            if (!glassType || !pane || !thickness) return false;
+            inquiryItems.push({
+                ...base,
+                glassType,
+                pane,
+                thickness,
+                type: `${pane} - ${glassType} - ${thickness}`
+            });
+        } else {
+            const type = typePicker?.getValue();
+            if (!type) return false;
+            inquiryItems.push({ ...base, type });
+        }
+        renderInquiryList();
+        clearEntryFields();
+        return true;
+    };
+
+    const setFormStatus = (message, type = 'info') => {
+        if (!qfStatus) return;
+        if (!message) {
+            qfStatus.hidden = true;
+            qfStatus.textContent = '';
+            qfStatus.className = 'qf__status';
+            return;
+        }
+        qfStatus.hidden = false;
+        qfStatus.textContent = message;
+        qfStatus.className = `qf__status qf__status--${type}`;
     };
 
     const updateAddItemBtn = () => {
@@ -603,7 +776,7 @@ const initSiteLoader = async () => {
     };
 
     const formatInquiryLine = ({ width, height, product, type, glassType, pane, thickness }) => {
-        const size = `${width} x ${height}`;
+        const size = `${width}" × ${height}"`;
         if (product === 'Glass') {
             if (glassType && pane && thickness) return `${size} - Glass - ${pane} - ${glassType} - ${thickness}`;
             if (glassType && thickness) return `${size} - Glass - ${glassType} - ${thickness}`;
@@ -661,32 +834,11 @@ const initSiteLoader = async () => {
     }
 
     qfAddItem?.addEventListener('click', () => {
-        if (!productPicker || !isEntryComplete() || inquiryItems.length >= MAX_QUOTE_ITEMS) return;
-        const product = productPicker.getValue();
-        const base = {
-            width: qfWidth.value.trim(),
-            height: qfHeight.value.trim(),
-            product
-        };
-        if (product === 'Glass') {
-            const glassType = glassTypePicker?.getValue();
-            const pane = panePicker?.getValue();
-            const thickness = thicknessPicker?.getValue();
-            if (!glassType || !pane || !thickness) return;
-            inquiryItems.push({
-                ...base,
-                glassType,
-                pane,
-                thickness,
-                type: `${pane} - ${glassType} - ${thickness}`
-            });
+        if (!addCurrentItem()) {
+            setFormStatus('Enter width, height, product, and type before adding an item.', 'error');
         } else {
-            const type = typePicker?.getValue();
-            if (!type) return;
-            inquiryItems.push({ ...base, type });
+            setFormStatus('');
         }
-        renderInquiryList();
-        clearEntryFields();
     });
 
     renderInquiryList();
@@ -699,6 +851,16 @@ const initSiteLoader = async () => {
         if (location.protocol === 'file:') {
             qfSubmit.disabled = true;
             qfSubmitText.textContent = 'Run npm start to submit';
+            setFormStatus('Start the server with npm start to use the quote form.', 'info');
+        } else {
+            fetch('/api/quote/status')
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (data && !data.emailReady) {
+                        setFormStatus('Email is not configured yet — submissions are saved locally until Gmail credentials are added to .env.', 'info');
+                    }
+                })
+                .catch(() => {});
         }
 
         quoteForm.addEventListener('submit', async e => {
@@ -708,10 +870,26 @@ const initSiteLoader = async () => {
             const name = quoteForm.name.value.trim();
             const email = quoteForm.email.value.trim();
             const phone = quoteForm.phone.value.trim();
-            if (!name || !email || !phone) return void (!name ? quoteForm.name : !email ? quoteForm.email : quoteForm.phone).focus();
-            if (!EMAIL_RE.test(email)) return void (quoteForm.email.focus(), setSubmitLabel('Invalid email address.', 4000));
+            const message = quoteForm.message.value.trim();
+
+            if (!name || !email || !phone) {
+                setFormStatus('Name, email, and phone are required.', 'error');
+                return void (!name ? quoteForm.name : !email ? quoteForm.email : quoteForm.phone).focus();
+            }
+            if (!EMAIL_RE.test(email)) {
+                setFormStatus('Enter a valid email address.', 'error');
+                return void (quoteForm.email.focus(), setSubmitLabel('Invalid email address.', 4000));
+            }
+
+            if (isEntryComplete()) addCurrentItem();
+
+            if (!inquiryItems.length && !message) {
+                setFormStatus('Add at least one product to your inquiry list, or write a note below.', 'error');
+                return void setSubmitLabel('Add a product or note first.', 4000);
+            }
 
             qfSubmit.disabled = true;
+            setFormStatus('');
             setSubmitLabel('Sending…');
             try {
                 const res = await fetch('/api/quote', {
@@ -721,15 +899,20 @@ const initSiteLoader = async () => {
                         name, email, phone,
                         company: quoteForm.company.value.trim(),
                         items: inquiryItems.map(({ width, height, product, type }) => ({ width, height, product, type })),
-                        message: quoteForm.message.value.trim()
+                        message
                     })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.success) throw new Error(data.error ?? 'Could not send. Please call us.');
                 quoteForm.reset();
                 resetInquiry();
+                const successMsg = data.storedLocally
+                    ? 'Request saved! We will follow up once email is configured.'
+                    : 'Request sent! We will reply within one business day.';
+                setFormStatus(successMsg, 'success');
                 setSubmitLabel('Request sent!', 4000);
             } catch (err) {
+                setFormStatus(err.message ?? 'Could not send. Please call us.', 'error');
                 setSubmitLabel(err.message ?? 'Could not send. Please call us.', 4000);
             } finally {
                 qfSubmit.disabled = location.protocol !== 'file:';

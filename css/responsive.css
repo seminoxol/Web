@@ -77,7 +77,12 @@
 
     .quote__layout { grid-template-columns: 1fr; }
     .qf__row--two { flex-direction: column; }
-    .qf-type-glass__grid { grid-template-columns: 1fr; }
+    .qf-type-glass__grid {
+        grid-template-columns: 1fr;
+    }
+    .qf-type-glass__grid > .qf__field:first-child {
+        grid-column: auto;
+    }
     .qf__submit    { width: 100%; justify-content: center; }
 }
 

@@ -15,7 +15,7 @@
     --polo-blue: #6B94B8;
     --polo-blue-light: #7FA5C6;
     --polo-blue-dark: #587FA8;
-    --theme-surface-light: #EDE7DC;
+    --theme-surface-light: #E4DAD0;
     --theme-surface-dark: var(--navy-deep);
 
     /* Neutrals */
@@ -30,7 +30,8 @@
     --dark-2: var(--navy-mid);
 
     --font-display: 'Lora', Georgia, serif;
-    --font-body: 'Lora', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-ui: 'DM Sans', system-ui, -apple-system, sans-serif;
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
     --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
     --header-h: 72px;
@@ -49,4 +50,4 @@
     --grad-quote:    var(--navy-deep);
     --grad-contact:  var(--navy-deep);
     --grad-footer:   var(--navy-deep);
-}
+}
