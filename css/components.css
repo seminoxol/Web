@@ -1396,12 +1396,12 @@ html.is-revealed .hero__slide--active .hero__img {
     -webkit-appearance: menulist;
     appearance: auto;
 }
-.html.touch-ui .qf-picker__native,
+html.touch-ui .qf-picker__native,
 .qf-picker--native .qf-picker__native {
     display: block;
 }
-.html.touch-ui .qf-picker > .qf-picker__trigger,
-.html.touch-ui .qf-picker > .qf-picker__panel,
+html.touch-ui .qf-picker > .qf-picker__trigger,
+html.touch-ui .qf-picker > .qf-picker__panel,
 .qf-picker--native > .qf-picker__trigger,
 .qf-picker--native > .qf-picker__panel {
     display: none !important;

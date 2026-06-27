@@ -1715,12 +1715,12 @@ html.is-revealed .hero__slide--active .hero__img {
     -webkit-appearance: menulist;
     appearance: auto;
 }
-.html.touch-ui .qf-picker__native,
+html.touch-ui .qf-picker__native,
 .qf-picker--native .qf-picker__native {
     display: block;
 }
-.html.touch-ui .qf-picker > .qf-picker__trigger,
-.html.touch-ui .qf-picker > .qf-picker__panel,
+html.touch-ui .qf-picker > .qf-picker__trigger,
+html.touch-ui .qf-picker > .qf-picker__panel,
 .qf-picker--native > .qf-picker__trigger,
 .qf-picker--native > .qf-picker__panel {
     display: none !important;
@@ -3465,22 +3465,27 @@ html.is-revealed .faq-cta__card {
         grid-template-rows: none;
     }
 
+    .gallery__viewport {
+        min-height: min(56vw, 280px);
+    }
+
     .gallery__track {
         align-items: flex-start;
     }
 
     .gallery__cell {
         aspect-ratio: 3 / 2;
-        height: auto !important;
         max-height: min(56vw, 280px) !important;
         align-self: flex-start;
     }
 
     .gallery__cell img {
-        position: absolute;
-        inset: 0;
+        position: relative;
+        display: block;
         width: 100%;
-        height: 100%;
+        height: auto;
+        max-height: min(56vw, 280px);
+        aspect-ratio: 3 / 2;
         object-fit: cover;
     }
 }

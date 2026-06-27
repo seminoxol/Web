@@ -646,10 +646,7 @@ const initSiteLoader = async () => {
 
     if (productCatalog) {
         productCatalog.querySelectorAll('.product-row').forEach(btn => {
-            btn.addEventListener('click', e => {
-                e.preventDefault();
-                handleProductRow(btn);
-            });
+            btn.addEventListener('click', () => handleProductRow(btn));
         });
         document.addEventListener('keydown', e => {
             if (e.key !== 'Escape') return;
@@ -696,12 +693,17 @@ const initSiteLoader = async () => {
             const activeW = isPartial ? Math.max(0, (vw - GAP * (visibleCount - 1)) / visibleCount) : standardW;
             const offset = startIdx * (standardW + GAP);
             const maxCellH = Math.min(Math.round(window.innerWidth * 0.55), 300);
+            const touchGallery = isTouchUI();
             cells.forEach((cell, i) => {
                 const onPage = i >= startIdx && i < startIdx + visibleCount;
                 const w = isPartial && onPage ? activeW : standardW;
                 const h = Math.min(Math.round(w * 2 / 3), maxCellH);
                 cell.style.width = `${w}px`;
-                cell.style.height = `${h}px`;
+                if (touchGallery) {
+                    cell.style.removeProperty('height');
+                } else {
+                    cell.style.height = `${h}px`;
+                }
                 cell.style.maxHeight = `${maxCellH}px`;
                 if (onPage) loadGalleryCellImage(cell);
             });
