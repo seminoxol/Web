@@ -279,6 +279,9 @@
             row.append(text, remove);
             list.appendChild(row);
         });
+        window.__quoteInquiryItems = items.map(({ width, height, product, type, quantity }) => ({
+            width, height, product, type, quantity: String(quantity)
+        }));
     };
 
     const clearEntry = () => {

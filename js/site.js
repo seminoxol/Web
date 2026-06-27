@@ -1579,6 +1579,7 @@ const initGalleryCarousel = () => {
         }
         renderInquiryList();
         clearEntryFields();
+        syncInquiryExport();
         return true;
     };
 
@@ -1603,6 +1604,14 @@ const initGalleryCarousel = () => {
         productPicker?.reset('Select product');
         updateTypeFields('');
         updateAddItemBtn();
+    };
+
+    const exportInquiryItems = () => inquiryItems.map(({ width, height, product, type, quantity }) => ({
+        width, height, product, type, quantity: String(quantity)
+    }));
+
+    const syncInquiryExport = () => {
+        window.__quoteInquiryItems = exportInquiryItems();
     };
 
     const formatInquiryLine = ({ width, height, product, type, glassType, pane, thickness, quantity }) => {
@@ -1640,6 +1649,7 @@ const initGalleryCarousel = () => {
             qfInquiryList.appendChild(row);
         });
         updateAddItemBtn();
+        syncInquiryExport();
     };
 
     const resetInquiry = () => {
@@ -1650,6 +1660,7 @@ const initGalleryCarousel = () => {
         inquiryItems = [];
         clearEntryFields();
         renderInquiryList();
+        syncInquiryExport();
     };
 
     const sanitizeDimensionInput = el => {
@@ -1729,6 +1740,14 @@ const initGalleryCarousel = () => {
 
     if (!window.__quoteInquiryManaged) {
         renderInquiryList();
+        window.__quoteInquiryApi = {
+            getItems: exportInquiryItems,
+            reset: resetInquiry,
+            tryAddCurrent: addCurrentItem,
+            updateButton: updateAddItemBtn,
+            isManaged: false
+        };
+        syncInquiryExport();
     } else {
         updateAddItemBtn();
     }

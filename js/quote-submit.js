@@ -87,6 +87,49 @@
         }
     };
 
+    const getSubmitItems = () => {
+        const fromApi = window.__quoteInquiryApi?.getItems?.();
+        if (fromApi?.length) return fromApi;
+        if (window.__quoteInquiryItems?.length) return window.__quoteInquiryItems;
+        return readItemsFromDom();
+    };
+
+    const readItemsFromDom = () => {
+        const rows = document.querySelectorAll('#qfInquiryList .qf__inquiry-text');
+        const items = [];
+        rows.forEach(el => {
+            const text = el.textContent?.trim() ?? '';
+            const parsed = parseInquiryLine(text);
+            if (parsed) items.push(parsed);
+        });
+        return items;
+    };
+
+    const parseInquiryLine = text => {
+        const match = text.match(/^(\d+(?:\.\d+)?)"\s*×\s*(\d+(?:\.\d+)?)"\s*-\s*(.+)$/);
+        if (!match) return null;
+        const [, width, height, rest] = match;
+        const qtyMatch = rest.match(/\s×\s*(\d+)\s*$/);
+        const body = qtyMatch ? rest.replace(/\s×\s*\d+\s*$/, '') : rest;
+        const quantity = qtyMatch?.[1] ?? '1';
+        const parts = body.split(' - ').map(part => part.trim()).filter(Boolean);
+        if (parts[0] === 'Glass' && parts.length >= 4) {
+            const [, pane, glassType, thickness] = parts;
+            return {
+                width,
+                height,
+                product: 'Glass',
+                type: `${pane} - ${glassType} - ${thickness}`,
+                quantity
+            };
+        }
+        if (parts.length >= 2) {
+            const [product, ...typeParts] = parts;
+            return { width, height, product, type: typeParts.join(' - '), quantity };
+        }
+        return null;
+    };
+
     const handleSubmit = async e => {
         e?.preventDefault?.();
         if (submitting) return;
@@ -129,7 +172,7 @@
                 window.__quoteInquiryApi.tryAddCurrent();
             }
 
-            const items = window.__quoteInquiryApi?.getItems?.() ?? [];
+            const items = getSubmitItems();
             if (!items.length && !message) {
                 setStatus('Add at least one product to your inquiry list, or write a note below.', 'error');
                 setSubmitLabel('Add a product or note first.', 4000);
@@ -163,6 +206,11 @@
             emailVerified = '';
             if (window.__quoteInquiryApi?.reset) {
                 window.__quoteInquiryApi.reset();
+            } else {
+                window.__quoteInquiryItems = [];
+                document.querySelectorAll('#qfInquiryList .qf__inquiry-item').forEach(el => el.remove());
+                const empty = document.getElementById('qfInquiryEmpty');
+                if (empty) empty.hidden = false;
             }
 
             const successMsg = !data.emailSent
