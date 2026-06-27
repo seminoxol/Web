@@ -773,6 +773,18 @@
                     (function () {
                         var root = document.documentElement;
                         if (!root.classList.contains('touch-ui')) return;
+
+                        function syncTypePanels(product) {
+                            var standard = document.getElementById('qfTypeStandard');
+                            var glass = document.getElementById('qfTypeGlass');
+                            var typeLabel = document.getElementById('qf-type-label');
+                            if (!standard || !glass) return;
+                            var isGlass = product === 'Glass';
+                            standard.hidden = isGlass;
+                            glass.hidden = !isGlass;
+                            if (typeLabel) typeLabel.hidden = isGlass;
+                        }
+
                         var map = [
                             ['qf-product-native', 'qf-product'],
                             ['qf-type-native', 'qf-type'],
@@ -786,8 +798,17 @@
                             if (!sel || !hidden) return;
                             sel.addEventListener('change', function () {
                                 hidden.value = sel.value;
+                                if (pair[0] === 'qf-product-native') {
+                                    syncTypePanels(sel.value);
+                                    document.dispatchEvent(new CustomEvent('qf-product-change', {
+                                        detail: { value: sel.value }
+                                    }));
+                                }
                             });
                         });
+
+                        var productSel = document.getElementById('qf-product-native');
+                        if (productSel && productSel.value) syncTypePanels(productSel.value);
                     })();
                     </script>
 

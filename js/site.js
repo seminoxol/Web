@@ -713,6 +713,7 @@ const initSiteLoader = async () => {
     const qfTypePicker = document.getElementById('qfTypePicker');
     const qfTypeStandard = document.getElementById('qfTypeStandard');
     const qfTypeGlass = document.getElementById('qfTypeGlass');
+    const qfTypeLabel = document.getElementById('qf-type-label');
     const qfGlassTypePicker = document.getElementById('qfGlassTypePicker');
     const qfPanePicker = document.getElementById('qfPanePicker');
     const qfThicknessPicker = document.getElementById('qfThicknessPicker');
@@ -874,7 +875,7 @@ const initSiteLoader = async () => {
             select.addEventListener('change', () => {
                 const value = select.value;
                 hidden.value = value;
-                if (value) onSelect?.(value);
+                onSelect?.(value);
                 updateAddItemBtn();
             });
 
@@ -1032,7 +1033,7 @@ const initSiteLoader = async () => {
 
     const productPicker = qfProductPicker ? initPicker(qfProductPicker, {
         placeholder: 'Select product',
-        onSelect: () => updateTypeFields(productPicker.getValue())
+        onSelect: value => updateTypeFields(value)
     }) : null;
 
     const typePicker = qfTypePicker ? initPicker(qfTypePicker, {
@@ -1059,10 +1060,12 @@ const initSiteLoader = async () => {
         const isGlass = product === 'Glass';
         if (qfTypeStandard) qfTypeStandard.hidden = isGlass;
         if (qfTypeGlass) qfTypeGlass.hidden = !isGlass;
+        if (qfTypeLabel) qfTypeLabel.hidden = isGlass;
 
         if (!product) {
             if (qfTypeStandard) qfTypeStandard.hidden = false;
             if (qfTypeGlass) qfTypeGlass.hidden = true;
+            if (qfTypeLabel) qfTypeLabel.hidden = false;
             typePicker?.setDisabled(true);
             typePicker?.reset('Select product first');
             typePicker?.renderOptions([]);
@@ -1119,6 +1122,16 @@ const initSiteLoader = async () => {
     if (glassTypePicker) glassTypePicker.setDisabled(true);
     if (panePicker) panePicker.setDisabled(true);
     if (thicknessPicker) thicknessPicker.setDisabled(true);
+
+    document.addEventListener('qf-product-change', e => {
+        updateTypeFields(e.detail?.value ?? '');
+    });
+
+    const initialProduct =
+        document.getElementById('qf-product-native')?.value
+        || document.getElementById('qf-product')?.value
+        || '';
+    if (initialProduct) updateTypeFields(initialProduct);
 
     if (!useNativePickers) {
         document.addEventListener('click', e => {
