@@ -275,6 +275,13 @@ const initGalleryCarousel = () => {
     const totalPages = () => Math.ceil(cells.length / perPage());
     const pageCellIndex = p => Math.min(p * perPage(), cells.length - 1);
 
+    const cellScrollLeft = cell => Math.round(cell.offsetLeft - track.offsetLeft);
+
+    const resetHorizontalPageScroll = () => {
+        document.documentElement.scrollLeft = 0;
+        document.body.scrollLeft = 0;
+    };
+
     const layoutCells = () => {
         const per = perPage();
         const vw = viewport.clientWidth;
@@ -324,11 +331,13 @@ const initGalleryCarousel = () => {
         const cell = cells[pageCellIndex(page)];
         if (!cell) return;
         updateUi();
-        cell.scrollIntoView({
-            inline: 'start',
-            block: 'nearest',
-            behavior: instant || isTouchUI() ? 'auto' : 'smooth'
-        });
+        const left = cellScrollLeft(cell);
+        try {
+            viewport.scrollTo({ left, behavior: instant || isTouchUI() ? 'auto' : 'smooth' });
+        } catch {
+            viewport.scrollLeft = left;
+        }
+        if (isTouchUI()) resetHorizontalPageScroll();
     };
 
     const syncPageFromScroll = () => {
@@ -338,7 +347,7 @@ const initGalleryCarousel = () => {
         for (let p = 0; p < totalPages(); p++) {
             const cell = cells[pageCellIndex(p)];
             if (!cell) continue;
-            const dist = Math.abs(cell.offsetLeft - left);
+            const dist = Math.abs(cellScrollLeft(cell) - left);
             if (dist < nearestDist) {
                 nearestDist = dist;
                 nearest = p;
@@ -396,6 +405,9 @@ const initGalleryCarousel = () => {
     document.getElementById('galleryFooter')?.classList.add('gallery__footer--ready');
     buildDots();
     updateUi();
+    layoutCells();
+    viewport.scrollLeft = 0;
+    resetHorizontalPageScroll();
     scrollToPage(0, true);
 
     window.__galleryPrev = e => {

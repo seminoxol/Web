@@ -311,6 +311,34 @@
 
     .products__head,
     .gallery__head { flex-direction: column; align-items: flex-start; }
+    .gallery__carousel {
+        position: relative;
+        gap: 0;
+        width: 100%;
+    }
+    .gallery__viewport {
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: 100%;
+    }
+    .gallery__arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        min-height: 36px;
+    }
+    .gallery__arrow:hover:not(:disabled) {
+        transform: translateY(-50%);
+    }
+    #galleryPrev { left: 8px; }
+    #galleryNext { right: 8px; }
+    .gallery__viewport--scroll .gallery__track {
+        gap: 0;
+    }
     .gallery__footer {
         margin-top: 12px;
         margin-bottom: 8px;
@@ -535,10 +563,6 @@
     .gallery__viewport--scroll {
         touch-action: pan-x pan-y;
         -webkit-overflow-scrolling: touch;
-    }
-
-    .gallery {
-        overflow: visible !important;
     }
 
     .gallery__track {
