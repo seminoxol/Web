@@ -1264,6 +1264,10 @@ const initGalleryCarousel = () => {
     };
 
     const updateAddItemBtn = () => {
+        if (window.__quoteInquiryApi?.updateButton) {
+            window.__quoteInquiryApi.updateButton();
+            return;
+        }
         if (!qfAddItem) return;
         const canAdd = isEntryComplete() && inquiryItems.length < MAX_QUOTE_ITEMS;
         const hint = document.getElementById('qf-add-item-hint');
@@ -1580,6 +1584,10 @@ const initGalleryCarousel = () => {
     };
 
     const resetInquiry = () => {
+        if (window.__quoteInquiryApi?.reset) {
+            window.__quoteInquiryApi.reset();
+            return;
+        }
         inquiryItems = [];
         clearEntryFields();
         renderInquiryList();
@@ -1650,15 +1658,21 @@ const initGalleryCarousel = () => {
         scheduleAddBtnUpdate();
     };
 
-    bindQuoteBtn(qfAddItem, handleAddItem);
-    window.__qfAddItem = e => {
-        e?.preventDefault?.();
-        handleAddItem();
-    };
-    window.__qfHandleAddItem = handleAddItem;
+    if (!window.__quoteInquiryManaged) {
+        bindQuoteBtn(qfAddItem, handleAddItem);
+        window.__qfAddItem = e => {
+            e?.preventDefault?.();
+            handleAddItem();
+        };
+        window.__qfHandleAddItem = handleAddItem;
+    }
     window.__qfUpdateAddBtn = updateAddItemBtn;
 
-    renderInquiryList();
+    if (!window.__quoteInquiryManaged) {
+        renderInquiryList();
+    } else {
+        updateAddItemBtn();
+    }
 
     const qfEmail = document.getElementById('qf-email');
     const qfEmailHint = document.getElementById('qf-email-hint');
@@ -1799,9 +1813,11 @@ const initGalleryCarousel = () => {
             }
             const email = emailCheck.email;
 
-            if (isEntryComplete()) addCurrentItem();
+            if (window.__quoteInquiryApi?.tryAddCurrent) window.__quoteInquiryApi.tryAddCurrent();
+            else if (isEntryComplete()) addCurrentItem();
 
-            if (!inquiryItems.length && !message) {
+            const submitItems = window.__quoteInquiryApi?.getItems?.() ?? inquiryItems;
+            if (!submitItems.length && !message) {
                 setFormStatus('Add at least one product to your inquiry list, or write a note below.', 'error');
                 return void setSubmitLabel('Add a product or note first.', 4000);
             }
@@ -1818,7 +1834,7 @@ const initGalleryCarousel = () => {
                         company: quoteForm.company.value.trim(),
                         website: quoteForm.website?.value.trim() ?? '',
                         consent: true,
-                        items: inquiryItems.map(({ width, height, product, type, quantity }) => ({
+                        items: submitItems.map(({ width, height, product, type, quantity }) => ({
                             width, height, product, type, quantity
                         })),
                         message
