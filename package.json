@@ -4,6 +4,8 @@
   "description": "PCI Glass — official website with quote request backend",
   "main": "server.js",
   "scripts": {
+    "build": "node scripts/build-style.js",
+    "prestart": "npm run build",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },

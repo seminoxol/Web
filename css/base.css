@@ -25,6 +25,12 @@ button { font: inherit; cursor: pointer; border: none; background: none; color: 
     content-visibility: visible;
 }
 
+#quote.section,
+.quote__form,
+.qf__entry {
+    content-visibility: visible;
+}
+
 .wrap {
     width: 100%;
     max-width: var(--wrap);

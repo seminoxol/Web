@@ -11,13 +11,7 @@
   "icons": [
     {
       "src": "/images/pcilogo.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/images/pcilogo.png",
-      "sizes": "512x512",
+      "sizes": "44x44",
       "type": "image/png",
       "purpose": "any"
     }

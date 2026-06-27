@@ -5,7 +5,7 @@ const LOADER_MIN_MS = 1100;
 const LOADER_HOLD_MS = 450;
 const LOADER_CURTAIN_MS = 2200;
 const LOADER_REVEAL_MS = LOADER_CURTAIN_MS + 200;
-const LOADER_OPEN_AT = 100;
+const LOADER_OPEN_PERCENT = 100;
 const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const loadImage = img => {
     if (!img?.dataset.src) return;
@@ -152,7 +152,7 @@ const initSiteLoader = async () => {
                 preloadImageUrl(url).then(() => {
                     loaded += 1;
                     setProgress(Math.round((loaded / total) * 100));
-                    if (Math.round((loaded / total) * 100) >= LOADER_OPEN_AT) finish();
+                    if (Math.round((loaded / total) * 100) >= LOADER_OPEN_PERCENT) finish();
                 });
             });
         });
@@ -224,16 +224,57 @@ const initSiteLoader = async () => {
         syncHeader();
     }
 
+    const isMobileNav = () => matchMedia('(max-width: 768px)').matches;
+
     const setMenuOpen = open => {
         nav?.classList.toggle('nav--open', open);
         menuBtn?.classList.toggle('menu-btn--open', open);
         menuBtn?.setAttribute('aria-expanded', String(open));
         menuBtn?.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-        document.body.style.overflow = open ? 'hidden' : '';
+        if (isMobileNav()) nav?.setAttribute('aria-hidden', String(!open));
+        else nav?.setAttribute('aria-hidden', 'false');
+        document.body.classList.toggle('nav-open', open);
+        document.body.style.overflow = open && isMobileNav() ? 'hidden' : '';
     };
 
+    const syncNavMode = () => {
+        if (!isMobileNav()) {
+            setMenuOpen(false);
+            nav?.setAttribute('aria-hidden', 'false');
+            return;
+        }
+        if (!nav?.classList.contains('nav--open')) {
+            nav?.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    syncNavMode();
+    window.addEventListener('resize', syncNavMode);
+
     menuBtn?.addEventListener('click', () => setMenuOpen(!nav?.classList.contains('nav--open')));
-    nav?.querySelectorAll('.nav__link').forEach(link => link.addEventListener('click', () => setMenuOpen(false)));
+    nav?.querySelectorAll('.nav__link').forEach(link => {
+        link.addEventListener('click', e => {
+            const href = link.getAttribute('href');
+            const wasOpen = nav?.classList.contains('nav--open');
+            setMenuOpen(false);
+            if (!wasOpen || !href) return;
+
+            try {
+                const url = new URL(href, location.origin);
+                const onHome = location.pathname === '/' || location.pathname.endsWith('/index.html');
+                const linkHome = url.pathname === '/' || url.pathname.endsWith('/index.html');
+                if (onHome && linkHome && url.hash) {
+                    e.preventDefault();
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            document.querySelector(url.hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            history.replaceState(null, '', url.hash);
+                        });
+                    });
+                }
+            } catch (_) {}
+        });
+    });
 
     const imageSlides = document.querySelectorAll('.hero__slide');
     const textSlides = document.querySelectorAll('.hero__text');
@@ -275,11 +316,17 @@ const initSiteLoader = async () => {
         counted = true;
         const inline = document.querySelector('.inline-stat');
         if (!inline) return;
-        inline.textContent = '0+';
-        const target = +inline.dataset.target, start = performance.now();
+        const target = +inline.dataset.target;
+        if (prefersReducedMotion) {
+            inline.textContent = `${target}+`;
+            return;
+        }
+        const startVal = Math.round(target * 0.92);
+        inline.textContent = `${startVal}+`;
+        const start = performance.now();
         const tick = now => {
             const t = Math.min((now - start) / 1400, 1);
-            inline.textContent = Math.round((1 - (1 - t) ** 3) * target) + '+';
+            inline.textContent = Math.round(startVal + (1 - (1 - t) ** 3) * (target - startVal)) + '+';
             if (t < 1) requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
@@ -409,7 +456,7 @@ const initSiteLoader = async () => {
             prevBtn.disabled = page === 0 || isGalleryAnimating;
             nextBtn.disabled = page >= maxPage || isGalleryAnimating;
             status.textContent = `Showing ${page * per + 1}–${Math.min((page + 1) * per, cells.length)} of ${cells.length}`;
-            dotsContainer?.querySelectorAll('.gallery__dot').forEach((dot, i) => (dot.classList.toggle('gallery__dot--active', i === page), dot.setAttribute('aria-selected', i === page)));
+            dotsContainer?.querySelectorAll('.gallery__dot').forEach((dot, i) => dot.classList.toggle('gallery__dot--active', i === page));
             if (instant) requestAnimationFrame(() => galleryCarousel.classList.remove('is-resizing'));
         };
 
@@ -435,9 +482,8 @@ const initSiteLoader = async () => {
                 const dot = document.createElement('button');
                 dot.type = 'button';
                 dot.className = `gallery__dot${i === page ? ' gallery__dot--active' : ''}`;
+                dot.setAttribute('role', 'button');
                 dot.setAttribute('aria-label', `Go to page ${i + 1}`);
-                dot.setAttribute('role', 'tab');
-                dot.setAttribute('aria-selected', i === page);
                 dot.addEventListener('click', () => goToPage(i));
                 return dot;
             }));
@@ -462,6 +508,7 @@ const initSiteLoader = async () => {
     const qfSubmit = document.getElementById('qfSubmit');
     const qfWidth = document.getElementById('qf-width');
     const qfHeight = document.getElementById('qf-height');
+    const qfQuantity = document.getElementById('qf-quantity');
     const qfProductPicker = document.getElementById('qfProductPicker');
     const qfTypePicker = document.getElementById('qfTypePicker');
     const qfTypeStandard = document.getElementById('qfTypeStandard');
@@ -637,6 +684,44 @@ const initSiteLoader = async () => {
             });
         });
 
+        let highlightedIndex = -1;
+
+        const setHighlighted = index => {
+            const options = [...list.querySelectorAll('.qf-picker__option')];
+            highlightedIndex = index;
+            options.forEach((row, i) => row.classList.toggle('is-highlighted', i === index));
+            if (index >= 0 && options[index]) options[index].scrollIntoView({ block: 'nearest' });
+        };
+
+        trigger.addEventListener('keydown', e => {
+            const options = [...list.querySelectorAll('.qf-picker__option')];
+            if (!picker.classList.contains('is-open')) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (!options.length) return;
+                    trigger.click();
+                    setHighlighted(Math.max(0, options.findIndex(row => row.classList.contains('is-selected'))));
+                }
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setHighlighted(Math.min(highlightedIndex + 1, options.length - 1));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setHighlighted(Math.max(highlightedIndex - 1, 0));
+            } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+                e.preventDefault();
+                options[highlightedIndex]?.click();
+            } else if (e.key === 'Escape') {
+                closePicker(picker);
+            }
+        });
+
+        list?.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closePicker(picker);
+        });
+
         reset();
         return { renderOptions, setDisabled, reset, getValue: () => hidden.value };
     };
@@ -733,6 +818,11 @@ const initSiteLoader = async () => {
         if (e.key === 'Escape') closeAllPickers();
     });
 
+    const parseQuantity = value => {
+        const n = parseInt(String(value ?? '1'), 10);
+        return Number.isFinite(n) && n >= 1 && n <= 999 ? n : 1;
+    };
+
     const isValidDim = value => {
         const n = parseFloat(value);
         return Number.isFinite(n) && n > 0;
@@ -752,7 +842,8 @@ const initSiteLoader = async () => {
         const base = {
             width: qfWidth.value.trim(),
             height: qfHeight.value.trim(),
-            product
+            product,
+            quantity: parseQuantity(qfQuantity?.value)
         };
         if (product === 'Glass') {
             const glassType = glassTypePicker?.getValue();
@@ -798,19 +889,21 @@ const initSiteLoader = async () => {
         closeAllPickers();
         if (qfWidth) qfWidth.value = '';
         if (qfHeight) qfHeight.value = '';
+        if (qfQuantity) qfQuantity.value = '1';
         productPicker?.reset('Select product');
         updateTypeFields('');
         updateAddItemBtn();
     };
 
-    const formatInquiryLine = ({ width, height, product, type, glassType, pane, thickness }) => {
+    const formatInquiryLine = ({ width, height, product, type, glassType, pane, thickness, quantity }) => {
         const size = `${width}" × ${height}"`;
+        const qty = quantity && quantity > 1 ? ` × ${quantity}` : '';
         if (product === 'Glass') {
-            if (glassType && pane && thickness) return `${size} - Glass - ${pane} - ${glassType} - ${thickness}`;
-            if (glassType && thickness) return `${size} - Glass - ${glassType} - ${thickness}`;
-            if (type) return `${size} - Glass - ${type}`;
+            if (glassType && pane && thickness) return `${size} - Glass - ${pane} - ${glassType} - ${thickness}${qty}`;
+            if (glassType && thickness) return `${size} - Glass - ${glassType} - ${thickness}${qty}`;
+            if (type) return `${size} - Glass - ${type}${qty}`;
         }
-        return `${size} - ${product} - ${type}`;
+        return `${size} - ${product} - ${type}${qty}`;
     };
 
     const renderInquiryList = () => {
@@ -861,6 +954,13 @@ const initSiteLoader = async () => {
         });
     }
 
+    qfQuantity?.addEventListener('input', () => {
+        let cleaned = qfQuantity.value.replace(/\D/g, '').slice(0, 3);
+        if (cleaned && parseInt(cleaned, 10) < 1) cleaned = '1';
+        if (qfQuantity.value !== cleaned) qfQuantity.value = cleaned;
+        updateAddItemBtn();
+    });
+
     qfAddItem?.addEventListener('click', () => {
         if (!addCurrentItem()) {
             setFormStatus('Enter width, height, product, and type before adding an item.', 'error');
@@ -899,6 +999,12 @@ const initSiteLoader = async () => {
             const email = quoteForm.email.value.trim();
             const phone = quoteForm.phone.value.trim();
             const message = quoteForm.message.value.trim();
+            const consent = quoteForm.consent?.checked;
+
+            if (!consent) {
+                setFormStatus('Please accept the privacy policy to continue.', 'error');
+                return void quoteForm.consent?.focus();
+            }
 
             if (!name || !email || !phone) {
                 setFormStatus('Name, email, and phone are required.', 'error');
@@ -926,7 +1032,11 @@ const initSiteLoader = async () => {
                     body: JSON.stringify({
                         name, email, phone,
                         company: quoteForm.company.value.trim(),
-                        items: inquiryItems.map(({ width, height, product, type }) => ({ width, height, product, type })),
+                        website: quoteForm.website?.value.trim() ?? '',
+                        consent: true,
+                        items: inquiryItems.map(({ width, height, product, type, quantity }) => ({
+                            width, height, product, type, quantity
+                        })),
                         message
                     })
                 });
