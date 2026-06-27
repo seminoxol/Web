@@ -835,11 +835,30 @@ const initGalleryCarousel = () => {
 
     const readNativeSelect = id => {
         const sel = document.getElementById(id);
-        if (!sel || sel.disabled) return '';
+        if (!sel) return '';
+        if (sel.disabled && id === 'qf-type-native') {
+            const glassPanel = document.getElementById('qfTypeGlass');
+            if (glassPanel && !glassPanel.hidden && !glassPanel.hasAttribute('hidden')) return 'n/a';
+            return '';
+        }
         const direct = sel.value?.trim() ?? '';
         if (direct) return direct;
-        const opt = sel.selectedOptions?.[0] ?? sel.options?.[sel.selectedIndex];
-        return opt?.value?.trim() ?? '';
+        for (const opt of sel.options) {
+            if (opt.selected && opt.value?.trim()) return opt.value.trim();
+        }
+        const idx = sel.selectedIndex;
+        if (idx > 0 && sel.options[idx]?.value?.trim()) return sel.options[idx].value.trim();
+        const opt = sel.selectedOptions?.[0] ?? sel.options?.[idx];
+        if (opt?.value?.trim()) return opt.value.trim();
+        const label = opt?.textContent?.trim() ?? '';
+        if (label) {
+            for (const option of sel.options) {
+                if (option.value && option.textContent?.trim() === label) return option.value.trim();
+            }
+            const token = label.split('—')[0].split('–')[0].trim();
+            if (token && ['Glass', 'Window', 'Doors'].includes(token)) return token;
+        }
+        return '';
     };
 
     const readDimValue = el => {
@@ -851,7 +870,7 @@ const initGalleryCarousel = () => {
         NATIVE_HIDDEN_PAIRS.forEach(([selectId, hiddenId]) => {
             const select = document.getElementById(selectId);
             const hidden = document.getElementById(hiddenId);
-            if (select && hidden) hidden.value = select.value;
+            if (select && hidden) hidden.value = readNativeSelect(selectId);
         });
     };
 
@@ -1204,15 +1223,29 @@ const initGalleryCarousel = () => {
 
     const getProductValue = () => {
         syncQuoteHiddenFields();
-        return productPicker?.getValue() || readNativeSelect('qf-product-native');
+        const raw = productPicker?.getValue() || readNativeSelect('qf-product-native');
+        if (!raw) {
+            const glassPanel = document.getElementById('qfTypeGlass');
+            if (glassPanel && !glassPanel.hidden && !glassPanel.hasAttribute('hidden')) return 'Glass';
+            return '';
+        }
+        if (raw === 'Glass' || raw === 'Window' || raw === 'Doors') return raw;
+        const token = raw.split('—')[0].split('–')[0].trim();
+        return ['Glass', 'Window', 'Doors'].includes(token) ? token : raw;
     };
+
+    const isGlassEntry = product => product === 'Glass' || (
+        !product && document.getElementById('qfTypeGlass')
+        && !document.getElementById('qfTypeGlass').hidden
+        && !document.getElementById('qfTypeGlass').hasAttribute('hidden')
+    );
 
     const isEntryComplete = () => {
         syncQuoteHiddenFields();
         if (!isValidDim(readDimValue(qfWidth)) || !isValidDim(readDimValue(qfHeight))) return false;
         const product = getProductValue();
-        if (!product) return false;
-        if (product === 'Glass') {
+        if (!product && !isGlassEntry('')) return false;
+        if (isGlassEntry(product)) {
             return Boolean(
                 readNativeSelect('qf-glass-type-native')
                 && readNativeSelect('qf-pane-native')
@@ -1228,8 +1261,8 @@ const initGalleryCarousel = () => {
         if (!isValidDim(readDimValue(qfWidth))) missing.push('width');
         if (!isValidDim(readDimValue(qfHeight))) missing.push('height');
         const product = getProductValue();
-        if (!product) missing.push('product');
-        else if (product === 'Glass') {
+        if (!product && !isGlassEntry('')) missing.push('product');
+        else if (isGlassEntry(product)) {
             if (!readNativeSelect('qf-glass-type-native')) missing.push('glass type');
             if (!readNativeSelect('qf-pane-native')) missing.push('pane');
             if (!readNativeSelect('qf-thickness-native')) missing.push('thickness');
@@ -1311,7 +1344,7 @@ const initGalleryCarousel = () => {
             } else {
                 sel.disabled = true;
                 sel.setAttribute('disabled', '');
-                sel.selectedIndex = 0;
+                if (!window.__quoteInquiryManaged) sel.selectedIndex = 0;
                 picker?.classList.add('qf-picker--disabled');
             }
         });
@@ -1357,6 +1390,11 @@ const initGalleryCarousel = () => {
     };
 
     const updateTypeFields = product => {
+        product = product?.trim() || readNativeSelect('qf-product-native') || '';
+        const glassPanel = document.getElementById('qfTypeGlass');
+        const glassPanelOpen = glassPanel && !glassPanel.hidden && !glassPanel.hasAttribute('hidden');
+        if (!product && glassPanelOpen) product = 'Glass';
+
         const isGlass = product === 'Glass';
         if (qfTypeStandard) {
             qfTypeStandard.hidden = isGlass;
@@ -1371,6 +1409,11 @@ const initGalleryCarousel = () => {
         if (qfTypeLabel) qfTypeLabel.hidden = isGlass;
 
         if (!product) {
+            if (glassPanelOpen) {
+                setGlassPickersEnabled(true);
+                updateAddItemBtn();
+                return;
+            }
             if (qfTypeStandard) qfTypeStandard.hidden = false;
             if (qfTypeGlass) qfTypeGlass.hidden = true;
             if (qfTypeLabel) qfTypeLabel.hidden = false;
@@ -1468,10 +1511,12 @@ const initGalleryCarousel = () => {
     });
 
     const initialProduct =
-        document.getElementById('qf-product-native')?.value
+        readNativeSelect('qf-product-native')
         || document.getElementById('qf-product')?.value
         || '';
-    updateTypeFields(initialProduct);
+    if (initialProduct || !window.__quoteInquiryManaged) {
+        updateTypeFields(initialProduct);
+    }
 
     if (!useNativePickers) {
         document.addEventListener('click', e => {

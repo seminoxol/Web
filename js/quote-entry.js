@@ -18,7 +18,8 @@
         status: 'qfStatus',
         list: 'qfInquiryList',
         empty: 'qfInquiryEmpty',
-        form: 'quoteForm'
+        form: 'quoteForm',
+        glassPanel: 'qfTypeGlass'
     };
 
     const HIDDEN_PAIRS = [
@@ -29,12 +30,67 @@
         [IDS.thickness, 'qf-thickness']
     ];
 
+    const PRODUCT_VALUES = ['Glass', 'Window', 'Doors'];
+
     const $ = id => document.getElementById(id);
 
     if (!$('quoteForm') || !$(IDS.addBtn)) return;
 
     let items = [];
     let tapLock = 0;
+    let refreshTimer = 0;
+
+    const isTouchUI = () =>
+        /iPad|iPhone|iPod|Android/i.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+        || matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+    const readSelectRaw = el => {
+        if (!el) return '';
+
+        const direct = (el.value || '').trim();
+        if (direct) return direct;
+
+        for (const opt of el.options) {
+            if (opt.selected && opt.value?.trim()) return opt.value.trim();
+        }
+
+        const idx = el.selectedIndex;
+        if (idx > 0 && el.options[idx]?.value?.trim()) {
+            return el.options[idx].value.trim();
+        }
+
+        const selected = el.selectedOptions?.[0];
+        if (selected?.value?.trim()) return selected.value.trim();
+        if (selected?.index > 0 && selected.value?.trim()) return selected.value.trim();
+
+        const label = (selected?.textContent || el.options[idx]?.textContent || '').trim();
+        if (label) {
+            for (const opt of el.options) {
+                if (opt.value && opt.textContent?.trim() === label) return opt.value.trim();
+            }
+            const token = label.split('—')[0].split('–')[0].trim();
+            if (token) {
+                for (const opt of el.options) {
+                    if (opt.value === token) return opt.value;
+                }
+            }
+        }
+
+        return '';
+    };
+
+    const readSelect = id => {
+        const el = $(id);
+        if (!el) return '';
+        if (el.disabled && id === IDS.type && isGlassMode()) return 'n/a';
+
+        const fromSelect = readSelectRaw(el);
+        if (fromSelect) return fromSelect;
+
+        const hiddenId = HIDDEN_PAIRS.find(([selectId]) => selectId === id)?.[1];
+        return (hiddenId && $(hiddenId)?.value?.trim()) || '';
+    };
 
     const syncHiddens = () => {
         HIDDEN_PAIRS.forEach(([selectId, hiddenId]) => {
@@ -42,31 +98,6 @@
             const hidden = $(hiddenId);
             if (sel && hidden) hidden.value = readSelectRaw(sel);
         });
-    };
-
-    const readSelectRaw = el => {
-        if (!el || el.disabled) return '';
-        const direct = (el.value || '').trim();
-        if (direct) return direct;
-        const idx = el.selectedIndex;
-        if (idx >= 0 && el.options?.[idx]) {
-            const opt = el.options[idx];
-            if (opt.value?.trim()) return opt.value.trim();
-            if (idx > 0 && opt.textContent?.trim()) return opt.textContent.trim();
-        }
-        const selected = el.selectedOptions?.[0];
-        if (selected?.value?.trim()) return selected.value.trim();
-        if (selected?.index > 0 && selected.textContent?.trim()) return selected.textContent.trim();
-        return '';
-    };
-
-    const readSelect = id => {
-        const el = $(id);
-        if (!el || el.disabled) return '';
-        const fromSelect = readSelectRaw(el);
-        if (fromSelect) return fromSelect;
-        const hiddenId = HIDDEN_PAIRS.find(([selectId]) => selectId === id)?.[1];
-        return (hiddenId && $(hiddenId)?.value?.trim()) || '';
     };
 
     const readDim = id => {
@@ -85,7 +116,36 @@
         return Number.isFinite(n) && n >= 1 && n <= 999 ? n : 1;
     };
 
-    const getProduct = () => readSelect(IDS.product);
+    const normalizeProduct = raw => {
+        if (!raw) return '';
+        if (PRODUCT_VALUES.includes(raw)) return raw;
+        const token = raw.split('—')[0].split('–')[0].trim();
+        if (PRODUCT_VALUES.includes(token)) return token;
+        const sel = $(IDS.product);
+        if (sel && sel.selectedIndex > 0) {
+            const optVal = sel.options[sel.selectedIndex]?.value?.trim();
+            if (optVal) return optVal;
+        }
+        return token;
+    };
+
+    const isGlassPanelVisible = () => {
+        const panel = $(IDS.glassPanel);
+        return Boolean(panel && !panel.hidden && !panel.hasAttribute('hidden'));
+    };
+
+    const isGlassMode = () => {
+        if (isGlassPanelVisible()) return true;
+        return normalizeProduct(readSelect(IDS.product)) === 'Glass';
+    };
+
+    const getProduct = () => {
+        if (isGlassPanelVisible()) {
+            const fromSelect = normalizeProduct(readSelect(IDS.product));
+            return fromSelect || 'Glass';
+        }
+        return normalizeProduct(readSelect(IDS.product));
+    };
 
     const getMissing = () => {
         syncHiddens();
@@ -94,7 +154,7 @@
         if (!validDim(readDim(IDS.height))) missing.push('height');
         const product = getProduct();
         if (!product) missing.push('product');
-        else if (product === 'Glass') {
+        else if (isGlassMode()) {
             if (!readSelect(IDS.glassType)) missing.push('glass type');
             if (!readSelect(IDS.pane)) missing.push('pane');
             if (!readSelect(IDS.thickness)) missing.push('thickness');
@@ -192,14 +252,16 @@
         if (!btn) return;
         syncHiddens();
         const ready = isComplete();
+        const touch = isTouchUI();
         btn.disabled = false;
         btn.removeAttribute('disabled');
         btn.setAttribute('aria-disabled', ready ? 'false' : 'true');
-        btn.classList.toggle('qf__add-item--inactive', !ready);
-        btn.classList.toggle('qf__add-item--ready', ready);
+        // On touch: always look tappable — iOS often shows filled selects before .value updates.
+        btn.classList.toggle('qf__add-item--inactive', touch ? false : !ready);
+        btn.classList.toggle('qf__add-item--ready', touch ? true : ready);
         const msg = missingMessage();
-        if (!ready) setHint(msg, '');
-        else setHint('', '');
+        if (!ready && msg) setHint(msg, '');
+        else if (ready) setHint('', '');
     };
 
     const focusMissing = () => {
@@ -225,12 +287,13 @@
             product,
             quantity: parseQty($(IDS.quantity)?.value)
         };
-        if (product === 'Glass') {
+        if (isGlassMode()) {
             const glassType = readSelect(IDS.glassType);
             const pane = readSelect(IDS.pane);
             const thickness = readSelect(IDS.thickness);
             items.push({
                 ...base,
+                product: 'Glass',
                 glassType,
                 pane,
                 thickness,
@@ -293,6 +356,7 @@
             refresh();
             setTimeout(refresh, 0);
             setTimeout(refresh, 120);
+            setTimeout(refresh, 400);
         };
         form.addEventListener('input', refresh, true);
         form.addEventListener('change', delayedRefresh, true);
@@ -304,6 +368,20 @@
             bindAddButton();
             delayedRefresh();
         });
+        if (isTouchUI()) {
+            form.addEventListener('focusin', () => {
+                clearInterval(refreshTimer);
+                refreshTimer = window.setInterval(refresh, 450);
+            }, true);
+            form.addEventListener('focusout', () => {
+                setTimeout(() => {
+                    if (!form.contains(document.activeElement)) {
+                        clearInterval(refreshTimer);
+                        refreshTimer = 0;
+                    }
+                }, 250);
+            }, true);
+        }
     };
 
     const exposeApi = () => {
@@ -341,6 +419,7 @@
         updateButton();
         setTimeout(updateButton, 0);
         setTimeout(updateButton, 300);
+        setTimeout(updateButton, 1200);
     };
 
     if (document.readyState === 'loading') {
