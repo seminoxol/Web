@@ -792,6 +792,45 @@
                         <button type="button" class="qf__add-item" id="qfAddItem" disabled>Add item</button>
                     </div>
 
+                    <script>
+                    (function () {
+                        function syncQuotePanels() {
+                            var sel = document.getElementById('qf-product-native');
+                            if (!sel) return;
+                            var product = sel.value;
+                            var isGlass = product === 'Glass';
+                            var standard = document.getElementById('qfTypeStandard');
+                            var glass = document.getElementById('qfTypeGlass');
+                            var typeLabel = document.getElementById('qf-type-label');
+                            if (standard) {
+                                if (isGlass) standard.setAttribute('hidden', '');
+                                else standard.removeAttribute('hidden');
+                            }
+                            if (glass) {
+                                if (isGlass) glass.removeAttribute('hidden');
+                                else glass.setAttribute('hidden', '');
+                            }
+                            if (typeLabel) typeLabel.hidden = isGlass;
+                            document.dispatchEvent(new CustomEvent('qf-product-change', {
+                                detail: { value: product }
+                            }));
+                        }
+                        function wire() {
+                            var sel = document.getElementById('qf-product-native');
+                            if (!sel) return;
+                            ['change', 'input', 'blur'].forEach(function (ev) {
+                                sel.addEventListener(ev, syncQuotePanels);
+                            });
+                            syncQuotePanels();
+                        }
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', wire);
+                        } else {
+                            wire();
+                        }
+                    })();
+                    </script>
+
                     <div class="qf__inquiry-wrap">
                         <span class="qf__inquiry-heading">Inquiry list</span>
                         <div class="qf__inquiry-list" id="qfInquiryList">

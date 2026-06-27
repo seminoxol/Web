@@ -1094,6 +1094,29 @@ const initSiteLoader = async () => {
         onSelect: () => updateAddItemBtn()
     }) : null;
 
+    const parseQuantity = value => {
+        const n = parseInt(String(value ?? '1'), 10);
+        return Number.isFinite(n) && n >= 1 && n <= 999 ? n : 1;
+    };
+
+    const isValidDim = value => {
+        const n = parseFloat(value);
+        return Number.isFinite(n) && n > 0;
+    };
+
+    const isEntryComplete = () => {
+        if (!isValidDim(qfWidth?.value) || !isValidDim(qfHeight?.value) || !productPicker?.getValue()) return false;
+        if (productPicker.getValue() === 'Glass') {
+            return Boolean(glassTypePicker?.getValue() && panePicker?.getValue() && thicknessPicker?.getValue());
+        }
+        return Boolean(typePicker?.getValue());
+    };
+
+    const updateAddItemBtn = () => {
+        if (!qfAddItem) return;
+        qfAddItem.disabled = !isEntryComplete() || inquiryItems.length >= MAX_QUOTE_ITEMS;
+    };
+
     const activateNativeSelect = sel => {
         sel.disabled = false;
         sel.removeAttribute('disabled');
@@ -1123,10 +1146,15 @@ const initSiteLoader = async () => {
 
     const updateTypeFields = product => {
         const isGlass = product === 'Glass';
-        if (qfTypeStandard) qfTypeStandard.hidden = isGlass;
+        if (qfTypeStandard) {
+            qfTypeStandard.hidden = isGlass;
+            if (isGlass) qfTypeStandard.setAttribute('hidden', '');
+            else qfTypeStandard.removeAttribute('hidden');
+        }
         if (qfTypeGlass) {
             qfTypeGlass.hidden = !isGlass;
             if (isGlass) qfTypeGlass.removeAttribute('hidden');
+            else qfTypeGlass.setAttribute('hidden', '');
         }
         if (qfTypeLabel) qfTypeLabel.hidden = isGlass;
 
@@ -1190,6 +1218,15 @@ const initSiteLoader = async () => {
         if (!(useNativePickers && productNative && productNative.options.length > 1)) {
             productPicker.renderOptions(PRODUCT_OPTIONS);
         }
+        if (productNative) {
+            const syncProduct = () => {
+                const value = productNative.value;
+                const hidden = document.getElementById('qf-product');
+                if (hidden) hidden.value = value;
+                updateTypeFields(value);
+            };
+            ['change', 'input', 'blur'].forEach(ev => productNative.addEventListener(ev, syncProduct));
+        }
     }
     document.addEventListener('qf-product-change', e => {
         updateTypeFields(e.detail?.value ?? '');
@@ -1218,24 +1255,6 @@ const initSiteLoader = async () => {
             if (e.key === 'Escape') closeAllPickers();
         });
     }
-
-    const parseQuantity = value => {
-        const n = parseInt(String(value ?? '1'), 10);
-        return Number.isFinite(n) && n >= 1 && n <= 999 ? n : 1;
-    };
-
-    const isValidDim = value => {
-        const n = parseFloat(value);
-        return Number.isFinite(n) && n > 0;
-    };
-
-    const isEntryComplete = () => {
-        if (!isValidDim(qfWidth?.value) || !isValidDim(qfHeight?.value) || !productPicker?.getValue()) return false;
-        if (productPicker.getValue() === 'Glass') {
-            return Boolean(glassTypePicker?.getValue() && panePicker?.getValue() && thicknessPicker?.getValue());
-        }
-        return Boolean(typePicker?.getValue());
-    };
 
     const addCurrentItem = () => {
         if (!productPicker || !isEntryComplete() || inquiryItems.length >= MAX_QUOTE_ITEMS) return false;
@@ -1279,11 +1298,6 @@ const initSiteLoader = async () => {
         qfStatus.hidden = false;
         qfStatus.textContent = message;
         qfStatus.className = `qf__status qf__status--${type}`;
-    };
-
-    const updateAddItemBtn = () => {
-        if (!qfAddItem) return;
-        qfAddItem.disabled = !isEntryComplete() || inquiryItems.length >= MAX_QUOTE_ITEMS;
     };
 
     const clearEntryFields = () => {
