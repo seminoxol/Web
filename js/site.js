@@ -544,7 +544,7 @@ const initSiteLoader = async () => {
         else if (el.tagName === 'IFRAME' && el.dataset.src) (el.src = el.dataset.src, el.removeAttribute('data-src'));
         lazyIo.unobserve(el);
     }), { rootMargin: '200px' });
-    document.querySelectorAll('[data-bg], iframe[data-src], img[data-src]:not(.gallery__cell img)').forEach(el => lazyIo.observe(el));
+    document.querySelectorAll('[data-bg], iframe[data-src], img[data-src]').forEach(el => lazyIo.observe(el));
 
     const revealIo = new IntersectionObserver(entries => entries.forEach(({ isIntersecting, target: el }) => {
         if (!isIntersecting) return;
@@ -643,6 +643,11 @@ const initSiteLoader = async () => {
             if (img) loadImage(img);
         };
 
+        const refreshGalleryLayout = (instant = true) => {
+            initGallery();
+            updateGallery(instant);
+        };
+
         const updateGallery = (instant = false) => {
             if (instant) galleryCarousel.classList.add('is-resizing');
             const per = perPage(), maxPage = totalPages() - 1;
@@ -706,10 +711,20 @@ const initSiteLoader = async () => {
             updateGallery(true);
         };
 
-        prevBtn.addEventListener('click', () => (initGallery(), goToPage(page - 1)));
-        nextBtn.addEventListener('click', () => (initGallery(), goToPage(page + 1)));
-        window.addEventListener('resize', () => (clearTimeout(resizeTimer), resizeTimer = setTimeout(() => (initGallery(), buildDots(), updateGallery(true)), 150)), { passive: true });
-        requestAnimationFrame(() => requestAnimationFrame(initGallery));
+        bindTap(prevBtn, () => { initGallery(); goToPage(page - 1); });
+        bindTap(nextBtn, () => { initGallery(); goToPage(page + 1); });
+        window.addEventListener('resize', () => (clearTimeout(resizeTimer), resizeTimer = setTimeout(() => refreshGalleryLayout(true), 150)), { passive: true });
+        requestAnimationFrame(() => requestAnimationFrame(() => refreshGalleryLayout(true)));
+
+        if (typeof IntersectionObserver !== 'undefined') {
+            const galleryIo = new IntersectionObserver(entries => {
+                entries.forEach(({ isIntersecting }) => {
+                    if (!isIntersecting) return;
+                    refreshGalleryLayout(true);
+                });
+            }, { rootMargin: '120px' });
+            galleryIo.observe(galleryCarousel);
+        }
         }
     }
 
