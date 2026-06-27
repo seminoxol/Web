@@ -611,6 +611,20 @@ const initSiteLoader = async () => {
             nextBtn.disabled = page >= totalPages() - 1;
         };
 
+        const wireStaticDots = () => {
+            if (!dotsContainer) return;
+            dotsContainer.querySelectorAll('.gallery__dot').forEach((dot, i) => {
+                dot.replaceWith(dot.cloneNode(true));
+            });
+            dotsContainer.querySelectorAll('.gallery__dot').forEach((dot, i) => {
+                bindTap(dot, e => {
+                    e?.preventDefault?.();
+                    initGallery();
+                    goToPage(i);
+                });
+            });
+        };
+
         const buildDots = () => {
             if (!dotsContainer) return;
             dotsContainer.replaceChildren(...Array.from({ length: totalPages() }, (_, i) => {
@@ -618,17 +632,30 @@ const initSiteLoader = async () => {
                 dot.type = 'button';
                 dot.className = `gallery__dot${i === page ? ' gallery__dot--active' : ''}`;
                 dot.setAttribute('aria-label', `Go to page ${i + 1}`);
-                bindTap(dot, () => goToPage(i));
+                bindTap(dot, e => {
+                    e?.preventDefault?.();
+                    goToPage(i);
+                });
                 return dot;
             }));
         };
 
-        const wireStaticDots = () => {
-            if (!dotsContainer || dotsContainer.dataset.wired === 'true') return;
-            dotsContainer.querySelectorAll('.gallery__dot').forEach((dot, i) => {
-                bindTap(dot, () => goToPage(i));
-            });
-            dotsContainer.dataset.wired = 'true';
+        const getTrackOffset = startIdx => {
+            if (startIdx <= 0) return 0;
+            const cell = cells[startIdx];
+            if (!cell) return 0;
+            return cell.offsetLeft;
+        };
+
+        const setTrackOffset = (offset, instant = false) => {
+            if (instant || isTouchUI()) {
+                galleryCarousel.classList.add('is-resizing');
+            }
+            track.style.transform = `translate3d(-${offset}px, 0, 0)`;
+            if (instant || isTouchUI()) {
+                void track.offsetHeight;
+                requestAnimationFrame(() => galleryCarousel.classList.remove('is-resizing'));
+            }
         };
 
         const updateGallery = (instant = false) => {
@@ -638,7 +665,7 @@ const initSiteLoader = async () => {
             if (vw < 48) {
                 if (instant) galleryCarousel.classList.remove('is-resizing');
                 requestAnimationFrame(() => updateGallery(instant));
-                return;
+                return false;
             }
 
             const per = perPage(), maxPage = totalPages() - 1;
@@ -648,7 +675,6 @@ const initSiteLoader = async () => {
             const isPartial = visibleCount < per;
             const standardW = Math.max(0, (vw - GAP * (per - 1)) / per);
             const activeW = isPartial ? Math.max(0, (vw - GAP * (visibleCount - 1)) / visibleCount) : standardW;
-            const offset = startIdx * (standardW + GAP);
             const maxCellH = Math.min(Math.round(window.innerWidth * 0.55), 300);
             const touchGallery = isTouchUI();
             cells.forEach((cell, i) => {
@@ -664,29 +690,33 @@ const initSiteLoader = async () => {
                 cell.style.maxHeight = `${maxCellH}px`;
                 if (onPage) loadGalleryCellImage(cell);
             });
-            track.style.transform = `translate3d(-${offset}px, 0, 0)`;
+            const offset = getTrackOffset(startIdx);
+            setTrackOffset(offset, instant || touchGallery);
             const atStart = page === 0;
             const atEnd = page >= maxPage;
-            if (isTouchUI()) {
-                prevBtn.disabled = atStart;
-                nextBtn.disabled = atEnd;
-            } else {
-                prevBtn.disabled = atStart || isGalleryAnimating;
-                nextBtn.disabled = atEnd || isGalleryAnimating;
-            }
+            prevBtn.disabled = atStart;
+            nextBtn.disabled = atEnd;
             if (status) {
                 status.textContent = `Showing ${page * per + 1}–${Math.min((page + 1) * per, cells.length)} of ${cells.length}`;
             }
-            dotsContainer?.querySelectorAll('.gallery__dot').forEach((dot, i) => dot.classList.toggle('gallery__dot--active', i === page));
+            dotsContainer?.querySelectorAll('.gallery__dot').forEach((dot, i) => {
+                dot.classList.toggle('gallery__dot--active', i === page);
+            });
             if (instant) requestAnimationFrame(() => galleryCarousel.classList.remove('is-resizing'));
+            return true;
         };
 
         const goToPage = nextPage => {
             const maxPage = totalPages() - 1;
             const target = Math.max(0, Math.min(nextPage, maxPage));
-            if (target === page || isGalleryAnimating) return;
-            isGalleryAnimating = true;
+            if (target === page) return;
+            if (!isTouchUI() && isGalleryAnimating) return;
             page = target;
+            if (isTouchUI()) {
+                updateGallery(true);
+                return;
+            }
+            isGalleryAnimating = true;
             updateGallery(false);
             clearTimeout(goToPage._animTimer);
             goToPage._animTimer = setTimeout(finishGalleryAnim, 650);
@@ -715,15 +745,15 @@ const initSiteLoader = async () => {
         document.getElementById('galleryFooter')?.classList.add('gallery__footer--ready');
 
         const onPrev = e => {
-            if (prevBtn.disabled) return;
             e?.preventDefault?.();
             initGallery();
+            if (page <= 0) return;
             goToPage(page - 1);
         };
         const onNext = e => {
-            if (nextBtn.disabled) return;
             e?.preventDefault?.();
             initGallery();
+            if (page >= totalPages() - 1) return;
             goToPage(page + 1);
         };
         bindTap(prevBtn, onPrev);
