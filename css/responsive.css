@@ -360,7 +360,8 @@
         pointer-events: none !important;
     }
 
-    #qfTypeGlass:not([hidden]) .qf-picker__native {
+    #qfTypeGlass:not([hidden]) .qf-picker__native,
+    #qfTypeStandard:not([hidden]) .qf-picker:not(.qf-picker--disabled) .qf-picker__native {
         pointer-events: auto !important;
         opacity: 1 !important;
     }
@@ -480,7 +481,8 @@
         cursor: not-allowed;
     }
 
-    #qfTypeGlass:not([hidden]) .qf-picker__native {
+    #qfTypeGlass:not([hidden]) .qf-picker__native,
+    #qfTypeStandard:not([hidden]) .qf-picker:not(.qf-picker--disabled) .qf-picker__native {
         pointer-events: auto !important;
         opacity: 1 !important;
     }

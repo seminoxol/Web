@@ -1525,7 +1525,8 @@ html.mobile-ui .qf-type-glass__grid .qf-picker__native,
     z-index: 5;
 }
 
-#qfTypeGlass:not([hidden]) .qf-picker__native {
+#qfTypeGlass:not([hidden]) .qf-picker__native,
+#qfTypeStandard:not([hidden]) .qf-picker:not(.qf-picker--disabled) .qf-picker__native {
     pointer-events: auto !important;
     opacity: 1 !important;
 }
