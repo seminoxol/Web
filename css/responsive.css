@@ -429,7 +429,14 @@
         touch-action: manipulation;
         min-height: 48px;
         font-size: 16px;
-        z-index: 3;
+        z-index: 5;
+        position: relative;
+        -webkit-appearance: menulist;
+        appearance: menulist;
+    }
+
+    .qf-picker--disabled .qf-picker__native {
+        pointer-events: none !important;
     }
 
     .header--mobile-nav .nav:not(.nav--open) {

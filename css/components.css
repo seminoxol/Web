@@ -1404,9 +1404,23 @@ html.touch-ui .qf-picker > .qf-picker__trigger,
 html.touch-ui .qf-picker > .qf-picker__panel,
 .qf-picker--native > .qf-picker__trigger,
 .qf-picker--native > .qf-picker__panel {
-    display: none !important;
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    display: block !important;
     visibility: hidden !important;
     pointer-events: none !important;
+}
+html.touch-ui .qf-picker--native,
+html.touch-ui .qf-picker:has(.qf-picker__native) {
+    position: relative;
+    z-index: 2;
 }
 .qf-picker__native:focus {
     background: var(--t-input-focus-bg);

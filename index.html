@@ -647,11 +647,14 @@
                         </div>
                         <div class="qf__row qf__row--two">
                             <div class="qf__field">
-                                <label id="qf-product-label">Product</label>
+                                <label id="qf-product-label" for="qf-product-native">Product</label>
                                 <div class="qf-picker" id="qfProductPicker">
                                     <input type="hidden" id="qf-product" value="">
                                     <select class="qf-picker__native" id="qf-product-native" aria-labelledby="qf-product-label">
-                                        <option value="" disabled selected>Select product</option>
+                                        <option value="">Select product</option>
+                                        <option value="Glass">Glass — 玻璃</option>
+                                        <option value="Window">Window — 窗户</option>
+                                        <option value="Doors">Doors — 门</option>
                                     </select>
                                     <button type="button" class="qf-picker__trigger" aria-labelledby="qf-product-label" aria-haspopup="listbox" aria-expanded="false">
                                         <span class="qf-picker__value qf-picker__value--placeholder">Select product</span>
@@ -671,12 +674,12 @@
                                 </div>
                             </div>
                             <div class="qf__field qf__field--type">
-                                <label id="qf-type-label">Type</label>
+                                <label id="qf-type-label" for="qf-type-native">Type</label>
                                 <div class="qf-type-panel qf-type-panel--standard" id="qfTypeStandard">
                                     <div class="qf-picker qf-picker--disabled" id="qfTypePicker">
                                         <input type="hidden" id="qf-type" value="">
                                         <select class="qf-picker__native" id="qf-type-native" aria-labelledby="qf-type-label" disabled>
-                                            <option value="" disabled selected>Select product first</option>
+                                            <option value="">Select product first</option>
                                         </select>
                                         <button type="button" class="qf-picker__trigger" aria-labelledby="qf-type-label" aria-haspopup="listbox" aria-expanded="false" disabled>
                                             <span class="qf-picker__value qf-picker__value--placeholder">Select product first</span>
@@ -698,11 +701,11 @@
                                 <div class="qf-type-panel qf-type-panel--glass" id="qfTypeGlass" hidden>
                                     <div class="qf-type-glass__grid">
                                         <div class="qf__field">
-                                            <label id="qf-glass-type-label">Glass</label>
+                                            <label id="qf-glass-type-label" for="qf-glass-type-native">Glass</label>
                                             <div class="qf-picker qf-picker--disabled" id="qfGlassTypePicker">
                                                 <input type="hidden" id="qf-glass-type" value="">
                                                 <select class="qf-picker__native" id="qf-glass-type-native" aria-labelledby="qf-glass-type-label" disabled>
-                                                    <option value="" disabled selected>Choose type</option>
+                                                    <option value="">Choose type</option>
                                                 </select>
                                                 <button type="button" class="qf-picker__trigger" aria-labelledby="qf-glass-type-label" aria-haspopup="listbox" aria-expanded="false" disabled>
                                                     <span class="qf-picker__value qf-picker__value--placeholder">Choose type</span>
@@ -722,11 +725,11 @@
                                             </div>
                                         </div>
                                         <div class="qf__field">
-                                            <label id="qf-pane-label">Pane</label>
+                                            <label id="qf-pane-label" for="qf-pane-native">Pane</label>
                                             <div class="qf-picker qf-picker--disabled" id="qfPanePicker">
                                                 <input type="hidden" id="qf-pane" value="">
                                                 <select class="qf-picker__native" id="qf-pane-native" aria-labelledby="qf-pane-label" disabled>
-                                                    <option value="" disabled selected>Choose pane</option>
+                                                    <option value="">Choose pane</option>
                                                 </select>
                                                 <button type="button" class="qf-picker__trigger" aria-labelledby="qf-pane-label" aria-haspopup="listbox" aria-expanded="false" disabled>
                                                     <span class="qf-picker__value qf-picker__value--placeholder">Choose pane</span>
@@ -746,11 +749,11 @@
                                             </div>
                                         </div>
                                         <div class="qf__field">
-                                            <label id="qf-thickness-label">Thickness</label>
+                                            <label id="qf-thickness-label" for="qf-thickness-native">Thickness</label>
                                             <div class="qf-picker qf-picker--disabled" id="qfThicknessPicker">
                                                 <input type="hidden" id="qf-thickness" value="">
                                                 <select class="qf-picker__native" id="qf-thickness-native" aria-labelledby="qf-thickness-label" disabled>
-                                                    <option value="" disabled selected>Choose mm</option>
+                                                    <option value="">Choose mm</option>
                                                 </select>
                                                 <button type="button" class="qf-picker__trigger" aria-labelledby="qf-thickness-label" aria-haspopup="listbox" aria-expanded="false" disabled>
                                                     <span class="qf-picker__value qf-picker__value--placeholder">Choose mm</span>

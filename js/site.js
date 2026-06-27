@@ -881,6 +881,10 @@ const initSiteLoader = async () => {
 
             let currentPlaceholder = placeholder;
 
+            const clearSelect = () => {
+                while (select.firstChild) select.removeChild(select.firstChild);
+            };
+
             const syncPlaceholder = () => {
                 const first = select.options[0];
                 if (first?.value === '') first.textContent = currentPlaceholder;
@@ -899,11 +903,9 @@ const initSiteLoader = async () => {
             };
 
             const renderOptions = options => {
-                select.replaceChildren();
+                clearSelect();
                 const placeholderOpt = document.createElement('option');
                 placeholderOpt.value = '';
-                placeholderOpt.disabled = true;
-                placeholderOpt.selected = true;
                 placeholderOpt.textContent = currentPlaceholder;
                 select.appendChild(placeholderOpt);
                 options.forEach(opt => {
@@ -928,13 +930,12 @@ const initSiteLoader = async () => {
             const reset = (placeholderText = placeholder) => {
                 currentPlaceholder = placeholderText;
                 hidden.value = '';
-                select.replaceChildren();
+                clearSelect();
                 const placeholderOpt = document.createElement('option');
                 placeholderOpt.value = '';
-                placeholderOpt.disabled = true;
-                placeholderOpt.selected = true;
                 placeholderOpt.textContent = placeholderText;
                 select.appendChild(placeholderOpt);
+                select.selectedIndex = 0;
             };
 
             select.addEventListener('change', () => {
@@ -946,7 +947,7 @@ const initSiteLoader = async () => {
 
             trigger?.setAttribute('tabindex', '-1');
             trigger?.setAttribute('aria-hidden', 'true');
-            reset();
+            if (select.options.length <= 1) reset();
             return { renderOptions, setDisabled, reset, getValue: () => hidden.value || select.value };
         }
 
