@@ -1066,15 +1066,11 @@ details.product-item[open] > .product-panel .product-panel__inner {
     scroll-snap-align: start;
     scroll-snap-stop: always;
     transition: none !important;
-    flex: 0 0 100%;
-    width: 100%;
+    flex: 0 0 auto;
     flex-shrink: 0;
-}
-@media (min-width: 600px) {
-    .gallery__viewport--scroll .gallery__cell {
-        flex: 0 0 auto;
-        width: auto;
-    }
+    aspect-ratio: 3 / 2;
+    height: auto;
+    max-height: none;
 }
 
 .gallery__viewport--scroll .gallery__cell img {

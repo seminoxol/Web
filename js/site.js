@@ -279,17 +279,13 @@ const initGalleryCarousel = () => {
         const per = perPage();
         const vw = viewport.clientWidth;
         if (vw < 48) return false;
-        if (per === 1) {
-            cells.forEach(cell => {
-                cell.style.removeProperty('width');
-                cell.style.removeProperty('flex-basis');
-            });
-            return true;
-        }
-        const cellW = Math.max(0, (vw - GAP * (per - 1)) / per);
+        const cellW = per === 1
+            ? vw
+            : Math.max(0, (vw - GAP * (per - 1)) / per);
         cells.forEach(cell => {
             cell.style.width = `${cellW}px`;
             cell.style.flexBasis = `${cellW}px`;
+            cell.style.maxHeight = '';
         });
         return true;
     };

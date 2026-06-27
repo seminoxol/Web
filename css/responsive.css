@@ -529,11 +529,7 @@
     }
 
     .gallery__viewport {
-        min-height: min(56vw, 280px);
-    }
-
-    .gallery__viewport--scroll .gallery__cell {
-        max-height: min(56vw, 280px) !important;
+        min-height: 0;
     }
 
     .gallery__viewport--scroll {
@@ -545,33 +541,7 @@
         overflow: visible !important;
     }
 
-    .gallery__viewport--scroll .gallery__cell img {
-        position: relative;
-        display: block;
-        width: 100%;
-        height: auto;
-        max-height: min(56vw, 280px);
-        aspect-ratio: 3 / 2;
-        object-fit: cover;
-    }
-
     .gallery__track {
         align-items: flex-start;
-    }
-
-    .gallery__cell {
-        aspect-ratio: 3 / 2;
-        max-height: min(56vw, 280px) !important;
-        align-self: flex-start;
-    }
-
-    .gallery__cell img {
-        position: relative;
-        display: block;
-        width: 100%;
-        height: auto;
-        max-height: min(56vw, 280px);
-        aspect-ratio: 3 / 2;
-        object-fit: cover;
     }
 }

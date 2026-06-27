@@ -1385,15 +1385,11 @@ details.product-item[open] > .product-panel .product-panel__inner {
     scroll-snap-align: start;
     scroll-snap-stop: always;
     transition: none !important;
-    flex: 0 0 100%;
-    width: 100%;
+    flex: 0 0 auto;
     flex-shrink: 0;
-}
-@media (min-width: 600px) {
-    .gallery__viewport--scroll .gallery__cell {
-        flex: 0 0 auto;
-        width: auto;
-    }
+    aspect-ratio: 3 / 2;
+    height: auto;
+    max-height: none;
 }
 
 .gallery__viewport--scroll .gallery__cell img {
@@ -3716,11 +3712,7 @@ html.is-revealed .faq-cta__card {
     }
 
     .gallery__viewport {
-        min-height: min(56vw, 280px);
-    }
-
-    .gallery__viewport--scroll .gallery__cell {
-        max-height: min(56vw, 280px) !important;
+        min-height: 0;
     }
 
     .gallery__viewport--scroll {
@@ -3732,33 +3724,7 @@ html.is-revealed .faq-cta__card {
         overflow: visible !important;
     }
 
-    .gallery__viewport--scroll .gallery__cell img {
-        position: relative;
-        display: block;
-        width: 100%;
-        height: auto;
-        max-height: min(56vw, 280px);
-        aspect-ratio: 3 / 2;
-        object-fit: cover;
-    }
-
     .gallery__track {
         align-items: flex-start;
-    }
-
-    .gallery__cell {
-        aspect-ratio: 3 / 2;
-        max-height: min(56vw, 280px) !important;
-        align-self: flex-start;
-    }
-
-    .gallery__cell img {
-        position: relative;
-        display: block;
-        width: 100%;
-        height: auto;
-        max-height: min(56vw, 280px);
-        aspect-ratio: 3 / 2;
-        object-fit: cover;
     }
 }
