@@ -1367,7 +1367,7 @@ html.is-revealed .hero__slide--active .hero__img {
 .qf-picker__native {
     width: 100%;
     font-family: var(--font-body);
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 400;
     color: var(--t-input-fg);
     background: var(--t-input-bg);

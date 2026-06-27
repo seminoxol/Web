@@ -1686,7 +1686,7 @@ html.is-revealed .hero__slide--active .hero__img {
 .qf-picker__native {
     width: 100%;
     font-family: var(--font-body);
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 400;
     color: var(--t-input-fg);
     background: var(--t-input-bg);
@@ -3033,43 +3033,58 @@ html.is-revealed .faq-cta__card {
 
 .header--mobile-nav .nav {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 401;
+    z-index: -1;
     flex: none;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: calc(var(--header-h) + 32px) clamp(20px, 4vw, 48px) 32px;
     gap: 0;
     margin: 0;
+    pointer-events: none;
+    visibility: hidden;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    padding: 0;
+    opacity: 0;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transform: none;
+    clip-path: none;
+    transition: none;
+}
+
+.header--mobile-nav .nav.nav--open {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 401;
+    width: auto;
+    height: auto;
+    padding: calc(var(--header-h) + 32px) clamp(20px, 4vw, 48px) 32px;
+    gap: 0;
     background: var(--t-nav-overlay-bg, rgba(6, 21, 40, 0.78));
     backdrop-filter: var(--t-nav-overlay-blur, blur(24px) saturate(150%));
     -webkit-backdrop-filter: var(--t-nav-overlay-blur, blur(24px) saturate(150%));
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    transform: translate3d(100%, 0, 0);
-    clip-path: inset(0 0 0 100%);
+    transform: translate3d(0, 0, 0);
+    clip-path: none;
     transition:
         opacity 0.4s var(--ease),
         visibility 0.4s var(--ease),
         transform 0.4s var(--ease),
-        clip-path 0.4s var(--ease),
         background-color 0.52s var(--ease);
-}
-
-.header--mobile-nav .nav.nav--open {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transform: translate3d(0, 0, 0);
-    clip-path: none;
 }
 
 .header--mobile-nav .nav .nav__link {
@@ -3104,7 +3119,7 @@ html.is-revealed .faq-cta__card {
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .header--mobile-nav .nav {
+    .header--mobile-nav .nav.nav--open {
         background: var(--t-nav-overlay-bg-fallback, rgba(6, 21, 40, 0.94));
     }
 }
@@ -3149,43 +3164,56 @@ html.is-revealed .faq-cta__card {
 
     .header .nav {
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 401;
+        z-index: -1;
         flex: none;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        padding: calc(var(--header-h) + 32px) clamp(20px, 4vw, 48px) 32px;
         gap: 0;
         margin: 0;
+        pointer-events: none;
+        visibility: hidden;
+        overflow: hidden;
+        width: 1px;
+        height: 1px;
+        top: auto;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        padding: 0;
+        opacity: 0;
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        transform: none;
+        clip-path: none;
+        transition: none;
+    }
+
+    .header .nav.nav--open {
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 401;
+        width: auto;
+        height: auto;
+        padding: calc(var(--header-h) + 32px) clamp(20px, 4vw, 48px) 32px;
         background: var(--t-nav-overlay-bg, rgba(6, 21, 40, 0.78));
         backdrop-filter: var(--t-nav-overlay-blur, blur(24px) saturate(150%));
         -webkit-backdrop-filter: var(--t-nav-overlay-blur, blur(24px) saturate(150%));
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        transform: translate3d(100%, 0, 0);
-        clip-path: inset(0 0 0 100%);
+        transform: translate3d(0, 0, 0);
         transition:
             opacity 0.4s var(--ease),
             visibility 0.4s var(--ease),
             transform 0.4s var(--ease),
-            clip-path 0.4s var(--ease),
             background-color 0.52s var(--ease);
-    }
-
-    .header .nav.nav--open {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transform: translate3d(0, 0, 0);
-        clip-path: none;
     }
 
     .header .nav .nav__link {
@@ -3385,6 +3413,18 @@ html.is-revealed .faq-cta__card {
         color: inherit;
         background: transparent;
         border: none;
+    }
+
+    #main,
+    .section {
+        position: relative;
+        z-index: 1;
+    }
+
+    .header--mobile-nav .nav:not(.nav--open) {
+        pointer-events: none !important;
+        z-index: -1 !important;
+        visibility: hidden !important;
     }
 
     .product-panel {

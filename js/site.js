@@ -59,6 +59,28 @@ const preloadImageUrl = url => new Promise(resolve => {
     img.src = url;
 });
 
+const isTouchUI = () =>
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+    'ontouchstart' in window ||
+    matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+const bindTap = (el, handler) => {
+    if (!el) return;
+    let fromTouch = false;
+    el.addEventListener('touchend', e => {
+        if (!e.cancelable) return;
+        e.preventDefault();
+        fromTouch = true;
+        handler(e);
+        window.setTimeout(() => { fromTouch = false; }, 450);
+    }, { passive: false });
+    el.addEventListener('click', e => {
+        if (fromTouch) return;
+        handler(e);
+    });
+};
+
 const initFaqAccordion = () => {
     const faqAccordion = document.getElementById('faqAccordion');
     if (!faqAccordion || faqAccordion.dataset.faqReady === '1') return;
@@ -79,7 +101,7 @@ const initFaqAccordion = () => {
     };
 
     faqAccordion.querySelectorAll('.faq-question').forEach(btn => {
-        btn.addEventListener('click', () => {
+        bindTap(btn, () => {
             const isOpen = btn.getAttribute('aria-expanded') === 'true';
             faqAccordion.querySelectorAll('.faq-question').forEach(other => {
                 if (other !== btn) closeFaqItem(other);
@@ -308,6 +330,21 @@ const initSiteLoader = async () => {
         return true;
     };
 
+    const syncNavHitTarget = open => {
+        if (!nav || !isMobileNav()) {
+            nav?.style.removeProperty('pointer-events');
+            nav?.style.removeProperty('z-index');
+            return;
+        }
+        if (open) {
+            nav.style.pointerEvents = 'auto';
+            nav.style.zIndex = '401';
+        } else {
+            nav.style.pointerEvents = 'none';
+            nav.style.zIndex = '-1';
+        }
+    };
+
     const setMenuOpen = open => {
         nav?.classList.toggle('nav--open', open);
         menuBtn?.classList.toggle('menu-btn--open', open);
@@ -333,6 +370,7 @@ const initSiteLoader = async () => {
             } else {
                 document.body.style.overflow = 'hidden';
             }
+            syncNavHitTarget(true);
             return;
         }
         if (isTouchDevice()) {
@@ -344,6 +382,7 @@ const initSiteLoader = async () => {
             window.scrollTo(0, menuScrollY);
         }
         document.body.style.overflow = '';
+        syncNavHitTarget(open);
     };
 
     const syncNavMode = () => {
@@ -355,6 +394,7 @@ const initSiteLoader = async () => {
                 nav?.setAttribute('aria-hidden', 'true');
                 nav?.setAttribute('inert', '');
             }
+            syncNavHitTarget(nav?.classList.contains('nav--open'));
             return;
         }
 
@@ -372,12 +412,14 @@ const initSiteLoader = async () => {
             setMenuOpen(false);
             nav?.removeAttribute('inert');
             nav?.setAttribute('aria-hidden', 'false');
+            syncNavHitTarget(false);
             return;
         }
         if (!nav?.classList.contains('nav--open')) {
             nav?.setAttribute('aria-hidden', 'true');
             nav?.setAttribute('inert', '');
         }
+        syncNavHitTarget(nav?.classList.contains('nav--open'));
     };
 
     syncNavMode();
@@ -394,7 +436,7 @@ const initSiteLoader = async () => {
     }
 
     const toggleMenu = () => setMenuOpen(!nav?.classList.contains('nav--open'));
-    menuBtn?.addEventListener('click', e => {
+    bindTap(menuBtn, e => {
         e.preventDefault();
         toggleMenu();
     });
@@ -547,7 +589,7 @@ const initSiteLoader = async () => {
     if (productCatalog) {
         productCatalog.querySelectorAll('.product-item').forEach(item => {
             const btn = item.querySelector('.product-row');
-            btn?.addEventListener('click', e => {
+            bindTap(btn, e => {
                 e.stopPropagation();
 
                 const isOpen = item.classList.contains('is-open');
@@ -715,10 +757,7 @@ const initSiteLoader = async () => {
     const MAX_QUOTE_ITEMS = 10;
     let inquiryItems = [];
     let openPicker = null;
-    const isIOS =
-        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const useNativePickers = isIOS || matchMedia('(hover: none) and (pointer: coarse)').matches;
+    const useNativePickers = isTouchUI();
 
     const closePicker = picker => {
         if (!picker) return;
@@ -892,7 +931,7 @@ const initSiteLoader = async () => {
                     onSelect?.(opt.value);
                     updateAddItemBtn();
                 };
-                btn.addEventListener('click', selectOption);
+                bindTap(btn, selectOption);
                 row.appendChild(btn);
                 list.appendChild(row);
             });
@@ -911,7 +950,7 @@ const initSiteLoader = async () => {
             closePicker(picker);
         };
 
-        trigger.addEventListener('click', e => {
+        bindTap(trigger, e => {
             e.preventDefault();
             e.stopPropagation();
             if (picker.classList.contains('qf-picker--disabled')) return;
@@ -1208,7 +1247,7 @@ const initSiteLoader = async () => {
         updateAddItemBtn();
     });
 
-    qfAddItem?.addEventListener('click', () => {
+    bindTap(qfAddItem, () => {
         if (!addCurrentItem()) {
             setFormStatus('Enter width, height, product, and type before adding an item.', 'error');
         } else {
