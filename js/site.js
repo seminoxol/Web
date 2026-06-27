@@ -259,34 +259,145 @@ const initSiteLoader = async () => {
         syncHeader();
     }
 
-    const isMobileNav = () => matchMedia('(max-width: 1024px)').matches;
+    const OVERLAP_EPS = 1;
+    const CLEARANCE_MIN = 8;
+    const MENU_MQ = '(max-width: 1024px)';
+    const menuMq = matchMedia(MENU_MQ);
+    const isTouchDevice = () => matchMedia('(hover: none) and (pointer: coarse)').matches;
+    let menuScrollY = 0;
+
+    const isMobileNav = () =>
+        (header?.classList.contains('header--mobile-nav') ?? false)
+        || menuMq.matches;
+
+    const headerSegments = () => [
+        header?.querySelector('.brand'),
+        nav,
+        header?.querySelector('.header__actions'),
+        header?.querySelector('.theme-btn'),
+    ].filter(el => el && el.getBoundingClientRect().width > 0);
+
+    const segmentGap = (a, b) => b.getBoundingClientRect().left - a.getBoundingClientRect().right;
+
+    const headerHasOverlap = () => {
+        const segments = headerSegments();
+        for (let i = 0; i < segments.length - 1; i++) {
+            if (segmentGap(segments[i], segments[i + 1]) < -OVERLAP_EPS) return true;
+        }
+        const links = [...(nav?.querySelectorAll('.nav__link:not(.nav__link--mobile-cta)') ?? [])];
+        for (let i = 0; i < links.length - 1; i++) {
+            const a = links[i].getBoundingClientRect();
+            const b = links[i + 1].getBoundingClientRect();
+            if (a.right > b.left + OVERLAP_EPS) return true;
+        }
+        if (nav && nav.scrollWidth > nav.clientWidth + OVERLAP_EPS) return true;
+        return false;
+    };
+
+    const headerHasClearance = minGap => {
+        const segments = headerSegments();
+        for (let i = 0; i < segments.length - 1; i++) {
+            if (segmentGap(segments[i], segments[i + 1]) < minGap) return false;
+        }
+        const links = [...(nav?.querySelectorAll('.nav__link:not(.nav__link--mobile-cta)') ?? [])];
+        for (let i = 0; i < links.length - 1; i++) {
+            const a = links[i].getBoundingClientRect();
+            const b = links[i + 1].getBoundingClientRect();
+            if (b.left - a.right < minGap) return false;
+        }
+        return true;
+    };
 
     const setMenuOpen = open => {
         nav?.classList.toggle('nav--open', open);
         menuBtn?.classList.toggle('menu-btn--open', open);
         menuBtn?.setAttribute('aria-expanded', String(open));
         menuBtn?.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-        if (isMobileNav()) nav?.setAttribute('aria-hidden', String(!open));
-        else nav?.setAttribute('aria-hidden', 'false');
+        if (isMobileNav()) {
+            nav?.setAttribute('aria-hidden', String(!open));
+            if (open) nav?.removeAttribute('inert');
+            else nav?.setAttribute('inert', '');
+        } else {
+            nav?.removeAttribute('inert');
+            nav?.setAttribute('aria-hidden', 'false');
+        }
         document.body.classList.toggle('nav-open', open);
-        document.body.style.overflow = open && isMobileNav() ? 'hidden' : '';
+        if (open && isMobileNav()) {
+            if (isTouchDevice()) {
+                menuScrollY = window.scrollY;
+                document.body.style.position = 'fixed';
+                document.body.style.top = `-${menuScrollY}px`;
+                document.body.style.left = '0';
+                document.body.style.right = '0';
+                document.body.style.width = '100%';
+            } else {
+                document.body.style.overflow = 'hidden';
+            }
+            return;
+        }
+        if (isTouchDevice()) {
+            document.body.style.removeProperty('position');
+            document.body.style.removeProperty('top');
+            document.body.style.removeProperty('left');
+            document.body.style.removeProperty('right');
+            document.body.style.removeProperty('width');
+            window.scrollTo(0, menuScrollY);
+        }
+        document.body.style.overflow = '';
     };
 
     const syncNavMode = () => {
-        if (!isMobileNav()) {
+        if (!header) return;
+
+        if (menuMq.matches) {
+            header.classList.add('header--mobile-nav');
+            if (!nav?.classList.contains('nav--open')) {
+                nav?.setAttribute('aria-hidden', 'true');
+                nav?.setAttribute('inert', '');
+            }
+            return;
+        }
+
+        const wasMobile = header.classList.contains('header--mobile-nav');
+        if (wasMobile) header.classList.remove('header--mobile-nav');
+
+        const overlap = headerHasOverlap();
+        const needsMobile = wasMobile
+            ? overlap || !headerHasClearance(CLEARANCE_MIN)
+            : overlap;
+
+        header.classList.toggle('header--mobile-nav', needsMobile);
+
+        if (!needsMobile) {
             setMenuOpen(false);
+            nav?.removeAttribute('inert');
             nav?.setAttribute('aria-hidden', 'false');
             return;
         }
         if (!nav?.classList.contains('nav--open')) {
             nav?.setAttribute('aria-hidden', 'true');
+            nav?.setAttribute('inert', '');
         }
     };
 
     syncNavMode();
     window.addEventListener('resize', syncNavMode);
+    menuMq.addEventListener('change', syncNavMode);
+    window.visualViewport?.addEventListener('resize', syncNavMode);
+    document.fonts?.ready.then(syncNavMode);
 
-    menuBtn?.addEventListener('click', () => setMenuOpen(!nav?.classList.contains('nav--open')));
+    const headerInner = header?.querySelector('.header__inner');
+    if (headerInner && typeof ResizeObserver !== 'undefined') {
+        const headerObserver = new ResizeObserver(() => syncNavMode());
+        headerObserver.observe(headerInner);
+        headerSegments().forEach(el => headerObserver.observe(el));
+    }
+
+    const toggleMenu = () => setMenuOpen(!nav?.classList.contains('nav--open'));
+    menuBtn?.addEventListener('click', e => {
+        e.preventDefault();
+        toggleMenu();
+    });
     nav?.querySelectorAll('.nav__link').forEach(link => {
         link.addEventListener('click', e => {
             const href = link.getAttribute('href');
@@ -604,6 +715,10 @@ const initSiteLoader = async () => {
     const MAX_QUOTE_ITEMS = 10;
     let inquiryItems = [];
     let openPicker = null;
+    const isIOS =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const useNativePickers = isIOS || matchMedia('(hover: none) and (pointer: coarse)').matches;
 
     const closePicker = picker => {
         if (!picker) return;
@@ -633,6 +748,84 @@ const initSiteLoader = async () => {
         const list = picker.querySelector('.qf-picker__list');
         const track = picker.querySelector('.qf-picker__scroll-track');
         const rail = picker.querySelector('.qf-picker__scroll-rail');
+
+        if (useNativePickers) {
+            picker.classList.add('qf-picker--native');
+            const select = document.createElement('select');
+            select.className = 'qf-picker__native';
+            if (hidden.id) select.id = `${hidden.id}-select`;
+            const labelledBy = trigger.getAttribute('aria-labelledby');
+            if (labelledBy) select.setAttribute('aria-labelledby', labelledBy);
+
+            let currentPlaceholder = placeholder;
+
+            const syncPlaceholder = () => {
+                const first = select.options[0];
+                if (first?.value === '') first.textContent = currentPlaceholder;
+            };
+
+            const setValue = (value, _label, placeholderText = currentPlaceholder) => {
+                hidden.value = value;
+                if (placeholderText) currentPlaceholder = placeholderText;
+                if (!value) {
+                    select.selectedIndex = 0;
+                    syncPlaceholder();
+                    return;
+                }
+                select.value = value;
+                if (select.value !== value) select.selectedIndex = 0;
+            };
+
+            const renderOptions = options => {
+                select.replaceChildren();
+                const placeholderOpt = document.createElement('option');
+                placeholderOpt.value = '';
+                placeholderOpt.disabled = true;
+                placeholderOpt.selected = true;
+                placeholderOpt.textContent = currentPlaceholder;
+                select.appendChild(placeholderOpt);
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt.value;
+                    option.textContent = `${opt.name} — ${opt.cn}`;
+                    select.appendChild(option);
+                });
+                if (hidden.value && [...select.options].some(o => o.value === hidden.value)) {
+                    select.value = hidden.value;
+                } else {
+                    select.selectedIndex = 0;
+                    syncPlaceholder();
+                }
+            };
+
+            const setDisabled = disabled => {
+                picker.classList.toggle('qf-picker--disabled', disabled);
+                select.disabled = disabled;
+            };
+
+            const reset = (placeholderText = placeholder) => {
+                currentPlaceholder = placeholderText;
+                hidden.value = '';
+                select.replaceChildren();
+                const placeholderOpt = document.createElement('option');
+                placeholderOpt.value = '';
+                placeholderOpt.disabled = true;
+                placeholderOpt.selected = true;
+                placeholderOpt.textContent = placeholderText;
+                select.appendChild(placeholderOpt);
+            };
+
+            select.addEventListener('change', () => {
+                const value = select.value;
+                hidden.value = value;
+                if (value) onSelect?.(value);
+                updateAddItemBtn();
+            });
+
+            picker.insertBefore(select, trigger);
+            reset();
+            return { renderOptions, setDisabled, reset, getValue: () => hidden.value || select.value };
+        }
 
         picker.addEventListener('click', e => e.stopPropagation());
 
@@ -863,9 +1056,11 @@ const initSiteLoader = async () => {
     if (panePicker) panePicker.setDisabled(true);
     if (thicknessPicker) thicknessPicker.setDisabled(true);
 
-    document.addEventListener('click', e => {
-        if (!e.target.closest('.qf-picker')) closeAllPickers();
-    });
+    if (!useNativePickers) {
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.qf-picker')) closeAllPickers();
+        });
+    }
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') closeAllPickers();
     });

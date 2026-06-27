@@ -234,12 +234,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     border-radius: 50%;
     border: 1px solid transparent;
     cursor: pointer;
     flex-shrink: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 403;
     color: #fff;
     transition: background-color 0.55s var(--ease), border-color 0.55s var(--ease), box-shadow 0.55s var(--ease), transform 0.25s var(--ease);
 }
@@ -258,9 +263,21 @@
     flex-direction: column;
     justify-content: center;
     gap: 6px;
-    width: 32px;
-    height: 32px;
-    padding: 4px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+    flex-shrink: 0;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    background: none;
+    border: none;
+    position: relative;
+    z-index: 403;
 }
 .menu-btn span {
     display: block;
@@ -586,18 +603,14 @@ html.is-revealed .hero__slide--active .hero__img {
 .bento__bg {
     position: absolute;
     inset: 0;
-    background-size: cover;
-    background-position: center;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
     background-color: var(--dark-2);
     transition: transform 0.6s var(--ease-out);
     transform: translateZ(0);
-}
-.bento__bg--loaded {
-    animation: bgFadeIn 0.4s var(--ease-out) forwards;
-}
-@keyframes bgFadeIn {
-    from { opacity: 0.6; }
-    to   { opacity: 1; }
+    pointer-events: none;
 }
 .bento__card::before {
     content: '';
@@ -1109,6 +1122,7 @@ html.is-revealed .hero__slide--active .hero__img {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    overflow: visible;
 }
 .qf__field label,
 .qf__inquiry-heading {
@@ -1348,6 +1362,33 @@ html.is-revealed .hero__slide--active .hero__img {
 .qf-picker { position: relative; }
 .qf-picker.is-open { z-index: 250; }
 .qf-picker:not(.is-open) > .qf-picker__panel { display: none !important; }
+.qf-picker--native > .qf-picker__trigger,
+.qf-picker--native > .qf-picker__panel { display: none !important; }
+.qf-picker__native {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--t-input-fg);
+    background: var(--t-input-bg);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: inset 0 0 0 1px var(--t-input-border);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    touch-action: manipulation;
+}
+.qf-picker__native:focus {
+    background: var(--t-input-focus-bg);
+    box-shadow: inset 0 0 0 1px var(--t-input-focus-border), var(--t-input-focus-ring);
+    outline: none;
+}
+.qf-picker--disabled .qf-picker__native {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
 .qf-picker__trigger {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;

@@ -553,12 +553,17 @@ html.is-revealed #siteLoader:not(.is-exiting) {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     border-radius: 50%;
     border: 1px solid transparent;
     cursor: pointer;
     flex-shrink: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 403;
     color: #fff;
     transition: background-color 0.55s var(--ease), border-color 0.55s var(--ease), box-shadow 0.55s var(--ease), transform 0.25s var(--ease);
 }
@@ -577,9 +582,21 @@ html.is-revealed #siteLoader:not(.is-exiting) {
     flex-direction: column;
     justify-content: center;
     gap: 6px;
-    width: 32px;
-    height: 32px;
-    padding: 4px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+    flex-shrink: 0;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    background: none;
+    border: none;
+    position: relative;
+    z-index: 403;
 }
 .menu-btn span {
     display: block;
@@ -905,18 +922,14 @@ html.is-revealed .hero__slide--active .hero__img {
 .bento__bg {
     position: absolute;
     inset: 0;
-    background-size: cover;
-    background-position: center;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
     background-color: var(--dark-2);
     transition: transform 0.6s var(--ease-out);
     transform: translateZ(0);
-}
-.bento__bg--loaded {
-    animation: bgFadeIn 0.4s var(--ease-out) forwards;
-}
-@keyframes bgFadeIn {
-    from { opacity: 0.6; }
-    to   { opacity: 1; }
+    pointer-events: none;
 }
 .bento__card::before {
     content: '';
@@ -1428,6 +1441,7 @@ html.is-revealed .hero__slide--active .hero__img {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    overflow: visible;
 }
 .qf__field label,
 .qf__inquiry-heading {
@@ -1667,6 +1681,33 @@ html.is-revealed .hero__slide--active .hero__img {
 .qf-picker { position: relative; }
 .qf-picker.is-open { z-index: 250; }
 .qf-picker:not(.is-open) > .qf-picker__panel { display: none !important; }
+.qf-picker--native > .qf-picker__trigger,
+.qf-picker--native > .qf-picker__panel { display: none !important; }
+.qf-picker__native {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--t-input-fg);
+    background: var(--t-input-bg);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: inset 0 0 0 1px var(--t-input-border);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    touch-action: manipulation;
+}
+.qf-picker__native:focus {
+    background: var(--t-input-focus-bg);
+    box-shadow: inset 0 0 0 1px var(--t-input-focus-border), var(--t-input-focus-ring);
+    outline: none;
+}
+.qf-picker--disabled .qf-picker__native {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
 .qf-picker__trigger {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -2891,7 +2932,12 @@ html.is-revealed .faq-cta__card {
     color: #5A4E3E;
 }
 
-@media (max-width: 768px) {
+.header--mobile-nav .nav {
+    flex: none;
+    justify-content: flex-start;
+}
+
+@media (max-width: 1024px) {
     .header .nav {
         flex: none;
         justify-content: flex-start;
@@ -2910,6 +2956,20 @@ html.is-revealed .faq-cta__card {
     [data-theme="light"] .header .nav .nav__link--mobile-cta {
         color: var(--brown-mid) !important;
     }
+}
+
+[data-theme="light"] .header--mobile-nav .nav {
+    background: var(--t-nav-overlay-bg);
+    backdrop-filter: var(--t-nav-overlay-blur);
+    -webkit-backdrop-filter: var(--t-nav-overlay-blur);
+}
+
+[data-theme="light"] .header--mobile-nav .nav .nav__link {
+    color: #2C2416;
+}
+
+[data-theme="light"] .header--mobile-nav .nav .nav__link--mobile-cta {
+    color: var(--brown-mid) !important;
 }
 
 /* ─── Responsive ─── */
@@ -2934,7 +2994,122 @@ html.is-revealed .faq-cta__card {
     .about__grid { grid-template-columns: 1fr; }
 }
 
-/* Tablet: too many header links for inline nav — use mobile menu */
+/* Header mobile nav — toggled by JS (.header--mobile-nav) when items would overlap */
+.header--mobile-nav {
+    overflow: visible;
+}
+
+.header--mobile-nav:has(.nav--open) {
+    z-index: 400;
+}
+
+.header--mobile-nav .header__inner {
+    z-index: 402;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.header--mobile-nav .header__actions {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+    gap: 0;
+}
+
+.header--mobile-nav .header__actions .btn--accent { display: none; }
+
+.header--mobile-nav .header__phone {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.header--mobile-nav .theme-btn,
+.header--mobile-nav .menu-btn {
+    flex-shrink: 0;
+}
+
+.header--mobile-nav .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 401;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: calc(var(--header-h) + 32px) clamp(20px, 4vw, 48px) 32px;
+    gap: 0;
+    margin: 0;
+    background: var(--t-nav-overlay-bg, rgba(6, 21, 40, 0.78));
+    backdrop-filter: var(--t-nav-overlay-blur, blur(24px) saturate(150%));
+    -webkit-backdrop-filter: var(--t-nav-overlay-blur, blur(24px) saturate(150%));
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transform: translate3d(100%, 0, 0);
+    clip-path: inset(0 0 0 100%);
+    transition:
+        opacity 0.4s var(--ease),
+        visibility 0.4s var(--ease),
+        transform 0.4s var(--ease),
+        clip-path 0.4s var(--ease),
+        background-color 0.52s var(--ease);
+}
+
+.header--mobile-nav .nav.nav--open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate3d(0, 0, 0);
+    clip-path: none;
+}
+
+.header--mobile-nav .nav .nav__link {
+    font-size: 1.5rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--white);
+    width: 100%;
+    max-width: 22rem;
+    text-align: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    text-shadow: none;
+}
+
+.header--mobile-nav .nav .nav__link::after { display: none; }
+
+.header--mobile-nav .menu-btn {
+    display: flex;
+    position: relative;
+    z-index: 403;
+}
+
+.header--mobile-nav .nav .nav__link--mobile-cta {
+    display: block;
+    width: 100%;
+    max-width: 22rem;
+    text-align: center;
+    color: var(--t-accent) !important;
+    font-weight: 700;
+    font-size: 1.35rem;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .header--mobile-nav .nav {
+        background: var(--t-nav-overlay-bg-fallback, rgba(6, 21, 40, 0.94));
+    }
+}
+
+/* No-JS / small-screen fallback — keep in sync with .header--mobile-nav above */
 @media (max-width: 1024px) {
     .header {
         overflow: visible;
@@ -2944,9 +3119,32 @@ html.is-revealed .faq-cta__card {
         z-index: 400;
     }
 
-    .header__inner {
+    .header .header__inner {
         z-index: 402;
-        gap: 16px;
+        justify-content: flex-start;
+        gap: 10px;
+    }
+
+    .header .header__actions {
+        display: flex;
+        flex: 1;
+        justify-content: center;
+        align-items: center;
+        min-width: 0;
+        gap: 0;
+    }
+
+    .header .header__actions .btn--accent { display: none; }
+
+    .header .header__phone {
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .header .theme-btn,
+    .header .menu-btn {
+        flex-shrink: 0;
     }
 
     .header .nav {
@@ -2972,10 +3170,13 @@ html.is-revealed .faq-cta__card {
         pointer-events: none;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        transform: none;
+        transform: translate3d(100%, 0, 0);
+        clip-path: inset(0 0 0 100%);
         transition:
             opacity 0.4s var(--ease),
             visibility 0.4s var(--ease),
+            transform 0.4s var(--ease),
+            clip-path 0.4s var(--ease),
             background-color 0.52s var(--ease);
     }
 
@@ -2983,6 +3184,8 @@ html.is-revealed .faq-cta__card {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
+        transform: translate3d(0, 0, 0);
+        clip-path: none;
     }
 
     .header .nav .nav__link {
@@ -3000,9 +3203,7 @@ html.is-revealed .faq-cta__card {
 
     .header .nav .nav__link::after { display: none; }
 
-    .header__actions { display: none; }
-
-    .menu-btn {
+    .header .menu-btn {
         display: flex;
         position: relative;
         z-index: 403;
@@ -3025,12 +3226,12 @@ html.is-revealed .faq-cta__card {
     }
 }
 
-@media (max-width: 1280px) and (min-width: 1025px) {
-    .header__inner { gap: 20px; }
-    .nav { gap: 22px; }
-    .nav__link { font-size: 13px; }
-    .header__phone { font-size: 13px; }
-    .header .btn--accent { padding: 10px 18px; font-size: 13px; }
+@media (max-width: 1280px) {
+    .header:not(.header--mobile-nav) .header__inner { gap: 20px; }
+    .header:not(.header--mobile-nav) .nav { gap: 22px; }
+    .header:not(.header--mobile-nav) .nav__link { font-size: 13px; }
+    .header:not(.header--mobile-nav) .header__phone { font-size: 13px; }
+    .header:not(.header--mobile-nav) .btn--accent { padding: 10px 18px; font-size: 13px; }
 }
 
 @media (max-width: 768px) {
@@ -3068,6 +3269,11 @@ html.is-revealed .faq-cta__card {
     .gallery__head { flex-direction: column; align-items: flex-start; }
     .product-row { grid-template-columns: 1fr auto; gap: 16px; }
     .product-list--catalog .product-row__label { padding-right: 4px; }
+    .product-list--catalog .product-row__cn { white-space: normal; }
+    .product-list--catalog .product-row {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
 
     .faq-question { padding: 18px 20px; }
     .faq-answer { padding: 0 20px; }
