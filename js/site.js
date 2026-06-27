@@ -259,7 +259,7 @@ const initSiteLoader = async () => {
         syncHeader();
     }
 
-    const isMobileNav = () => matchMedia('(max-width: 768px)').matches;
+    const isMobileNav = () => matchMedia('(max-width: 1024px)').matches;
 
     const setMenuOpen = open => {
         nav?.classList.toggle('nav--open', open);
