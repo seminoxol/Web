@@ -582,17 +582,7 @@ const initSiteLoader = async () => {
     document.querySelectorAll('.reveal').forEach(el => revealIo.observe(el));
 
     const productCatalog = document.querySelector('.product-list--catalog');
-
-    if (productCatalog) {
-        productCatalog.querySelectorAll('details.product-item').forEach(detail => {
-            detail.addEventListener('toggle', () => {
-                if (!detail.open) return;
-                productCatalog.querySelectorAll('details.product-item').forEach(other => {
-                    if (other !== detail) other.open = false;
-                });
-            });
-        });
-    }
+    /* Exclusive accordion uses details[name=catalog] — no JS toggle needed */
 
     try {
     const galleryCarousel = document.getElementById('galleryCarousel');

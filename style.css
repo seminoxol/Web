@@ -1116,7 +1116,7 @@ html.is-revealed .hero__slide--active .hero__img {
     color: var(--t-fg-dim);
     transform: rotate(0deg);
     transform-origin: center;
-    transition: color 0.45s var(--ease), transform 0.45s var(--ease);
+    transition: color 0.45s var(--ease), transform 0.65s var(--ease-out);
 }
 .product-list--catalog .product-row__arrow svg {
     display: block;
@@ -1177,15 +1177,68 @@ html.is-revealed .hero__slide--active .hero__img {
     color: var(--t-accent);
     transform: rotate(90deg);
 }
+@media (prefers-reduced-motion: reduce) {
+    .product-panel,
+    .product-panel__inner,
+    .product-list--catalog .product-row__arrow {
+        transition-duration: 0.01ms !important;
+    }
+    details.product-item[open] > .product-panel {
+        animation: none !important;
+    }
+    details.product-item::details-content {
+        transition-duration: 0.01ms !important;
+    }
+}
 .product-panel {
     display: grid;
     grid-template-rows: 0fr;
     overflow: hidden;
-    transition: grid-template-rows 0.45s var(--ease);
+    opacity: 0;
+    transition:
+        grid-template-rows 0.65s var(--ease-out),
+        opacity 0.55s var(--ease-out);
 }
 .product-item.is-open .product-panel,
 details.product-item[open] > .product-panel {
     grid-template-rows: 1fr;
+    opacity: 1;
+}
+details.product-item > .product-panel {
+    animation: none;
+}
+details.product-item[open] > .product-panel {
+    animation: product-panel-reveal 0.65s var(--ease-out) both;
+}
+@keyframes product-panel-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@supports (height: calc-size(auto, size)) {
+    details.product-item::details-content {
+        block-size: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition:
+            block-size 0.65s var(--ease-out),
+            opacity 0.55s var(--ease-out),
+            content-visibility 0.65s allow-discrete;
+        content-visibility: hidden;
+    }
+    details.product-item[open]::details-content {
+        block-size: auto;
+        opacity: 1;
+        content-visibility: visible;
+    }
+    details.product-item[open] > .product-panel {
+        animation: none;
+    }
 }
 .product-panel__inner {
     overflow: hidden;
@@ -1193,7 +1246,7 @@ details.product-item[open] > .product-panel {
     display: flex;
     justify-content: center;
     padding: 0 16px;
-    transition: padding 0.45s var(--ease);
+    transition: padding 0.65s var(--ease-out);
 }
 .product-item.is-open .product-panel__inner,
 details.product-item[open] > .product-panel .product-panel__inner {
@@ -3489,20 +3542,6 @@ html.is-revealed .faq-cta__card {
     .section {
         position: relative;
         z-index: 1;
-    }
-
-    .product-panel {
-        display: block;
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.45s var(--ease);
-        grid-template-rows: none;
-    }
-
-    .product-item.is-open .product-panel,
-    details.product-item[open] > .product-panel {
-        max-height: 420px;
-        grid-template-rows: none;
     }
 
     .gallery__viewport {

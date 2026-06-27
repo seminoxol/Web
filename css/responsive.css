@@ -452,20 +452,6 @@
         z-index: 1;
     }
 
-    .product-panel {
-        display: block;
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.45s var(--ease);
-        grid-template-rows: none;
-    }
-
-    .product-item.is-open .product-panel,
-    details.product-item[open] > .product-panel {
-        max-height: 420px;
-        grid-template-rows: none;
-    }
-
     .gallery__viewport {
         min-height: min(56vw, 280px);
     }
