@@ -3,4 +3,12 @@
             const t = localStorage.getItem('theme');
             if (t) document.documentElement.setAttribute('data-theme', t);
         } catch (_) {}
+        (function () {
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+                || 'ontouchstart' in window
+                || matchMedia('(hover: none) and (pointer: coarse)').matches) {
+                document.documentElement.classList.add('touch-ui');
+            }
+        })();
     </script>

@@ -1374,14 +1374,8 @@ html.is-revealed .hero__slide--active .hero__img {
 .qf-picker { position: relative; }
 .qf-picker.is-open { z-index: 250; }
 .qf-picker:not(.is-open) > .qf-picker__panel { display: none !important; }
-.qf-picker--native > .qf-picker__trigger,
-.qf-picker--native > .qf-picker__panel {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-}
 .qf-picker__native {
-    display: block;
+    display: none;
     width: 100%;
     font-family: var(--font-body);
     font-size: 16px;
@@ -1398,7 +1392,21 @@ html.is-revealed .hero__slide--active .hero__img {
     touch-action: manipulation;
     -webkit-tap-highlight-color: rgba(184, 220, 240, 0.2);
     position: relative;
-    z-index: 2;
+    z-index: 3;
+    -webkit-appearance: menulist;
+    appearance: auto;
+}
+.html.touch-ui .qf-picker__native,
+.qf-picker--native .qf-picker__native {
+    display: block;
+}
+.html.touch-ui .qf-picker > .qf-picker__trigger,
+.html.touch-ui .qf-picker > .qf-picker__panel,
+.qf-picker--native > .qf-picker__trigger,
+.qf-picker--native > .qf-picker__panel {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 .qf-picker__native:focus {
     background: var(--t-input-focus-bg);

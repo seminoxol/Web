@@ -413,42 +413,36 @@
     .qf__field,
     .qf-picker,
     .product-list--catalog,
-    .product-list--catalog .product-row {
+    .product-list--catalog .product-row,
+    .reveal {
         overflow: visible !important;
         pointer-events: auto !important;
+    }
+
+    .product-list--catalog .product-row {
+        user-select: auto !important;
+        -webkit-user-select: auto !important;
     }
 
     .qf-picker__native {
         pointer-events: auto !important;
         touch-action: manipulation;
         min-height: 48px;
+        font-size: 16px;
+        z-index: 3;
     }
 
-    .qf-picker__option-wrap {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-    }
-
-    .qf-picker__list .qf-picker__option {
-        width: 100%;
-        text-align: left;
-        font: inherit;
-        color: inherit;
-        background: transparent;
-        border: none;
+    .header--mobile-nav .nav:not(.nav--open) {
+        display: none !important;
+        pointer-events: none !important;
+        z-index: -1 !important;
+        visibility: hidden !important;
     }
 
     #main,
     .section {
         position: relative;
         z-index: 1;
-    }
-
-    .header--mobile-nav .nav:not(.nav--open) {
-        pointer-events: none !important;
-        z-index: -1 !important;
-        visibility: hidden !important;
     }
 
     .product-panel {

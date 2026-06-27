@@ -81,14 +81,27 @@ const bindTap = (el, handler) => {
 };
 
 const unlockBodyScroll = () => {
+    const nav = document.getElementById('nav');
+    const menuBtn = document.getElementById('menuBtn');
     document.body.classList.remove('nav-open', 'quote-picker-open');
     document.body.style.removeProperty('position');
     document.body.style.removeProperty('top');
     document.body.style.removeProperty('left');
     document.body.style.removeProperty('right');
     document.body.style.removeProperty('width');
-    document.body.style.overflow = '';
-    document.documentElement.style.overflow = '';
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('touch-action');
+    document.documentElement.style.removeProperty('overflow');
+    if (nav?.classList.contains('nav--open')) {
+        nav.classList.remove('nav--open');
+        nav.setAttribute('aria-hidden', 'true');
+        nav.removeAttribute('inert');
+        menuBtn?.classList.remove('menu-btn--open');
+        menuBtn?.setAttribute('aria-expanded', 'false');
+        menuBtn?.setAttribute('aria-label', 'Open menu');
+    }
+    nav?.style.removeProperty('pointer-events');
+    nav?.style.removeProperty('z-index');
 };
 
 const initFaqAccordion = () => {
@@ -632,18 +645,12 @@ const initSiteLoader = async () => {
     };
 
     if (productCatalog) {
-        let lastProductTap = 0;
-        const activateProductRow = e => {
-            const btn = e.target.closest('.product-row');
-            if (!btn || !productCatalog.contains(btn)) return;
-            const now = Date.now();
-            if (e.type === 'touchend') lastProductTap = now;
-            else if (now - lastProductTap < 500) return;
-            e.stopPropagation?.();
-            handleProductRow(btn);
-        };
-        productCatalog.addEventListener('click', activateProductRow);
-        productCatalog.addEventListener('touchend', activateProductRow, { passive: true });
+        productCatalog.querySelectorAll('.product-row').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.preventDefault();
+                handleProductRow(btn);
+            });
+        });
         document.addEventListener('keydown', e => {
             if (e.key !== 'Escape') return;
             productCatalog.querySelectorAll('.product-item.is-open').forEach(closeProductItem);
@@ -763,6 +770,8 @@ const initSiteLoader = async () => {
         console.error('Gallery init failed:', galleryErr);
     }
 
+    try {
+
     const quoteForm = document.getElementById('quoteForm');
     const qfSubmit = document.getElementById('qfSubmit');
     const qfWidth = document.getElementById('qf-width');
@@ -848,6 +857,7 @@ const initSiteLoader = async () => {
 
     const initPicker = (picker, { placeholder, onSelect }) => {
         const hidden = picker.querySelector('input[type="hidden"]');
+        if (!hidden) return null;
         const trigger = picker.querySelector('.qf-picker__trigger');
         const valueEl = picker.querySelector('.qf-picker__value');
         const panel = picker.querySelector('.qf-picker__panel');
@@ -857,11 +867,15 @@ const initSiteLoader = async () => {
 
         if (useNativePickers) {
             picker.classList.add('qf-picker--native');
-            const select = document.createElement('select');
-            select.className = 'qf-picker__native';
-            if (hidden.id) select.id = `${hidden.id}-select`;
-            const labelledBy = trigger.getAttribute('aria-labelledby');
-            if (labelledBy) select.setAttribute('aria-labelledby', labelledBy);
+            let select = picker.querySelector('.qf-picker__native');
+            if (!select) {
+                select = document.createElement('select');
+                select.className = 'qf-picker__native';
+                if (hidden.id) select.id = `${hidden.id}-native`;
+                const labelledBy = trigger?.getAttribute('aria-labelledby');
+                if (labelledBy) select.setAttribute('aria-labelledby', labelledBy);
+                picker.insertBefore(select, trigger ?? picker.firstChild);
+            }
 
             let currentPlaceholder = placeholder;
 
@@ -928,12 +942,13 @@ const initSiteLoader = async () => {
                 updateAddItemBtn();
             });
 
-            trigger.setAttribute('tabindex', '-1');
-            trigger.setAttribute('aria-hidden', 'true');
-            picker.insertBefore(select, trigger);
+            trigger?.setAttribute('tabindex', '-1');
+            trigger?.setAttribute('aria-hidden', 'true');
             reset();
             return { renderOptions, setDisabled, reset, getValue: () => hidden.value || select.value };
         }
+
+        if (!trigger || !valueEl || !list) return null;
 
         picker.addEventListener('click', e => e.stopPropagation());
 
@@ -1411,6 +1426,10 @@ const initSiteLoader = async () => {
                 qfSubmit.disabled = location.protocol !== 'file:';
             }
         });
+    }
+
+    } catch (quoteErr) {
+        console.error('Quote form init failed:', quoteErr);
     }
 
     } catch (err) {
