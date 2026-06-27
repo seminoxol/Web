@@ -429,13 +429,14 @@ const initSiteLoader = async () => {
         if (!header) return;
         const brand = header.querySelector('.brand');
         const actions = header.querySelector('.header__actions');
-        if (!brand || !actions || !isMobileNav()) {
+        const phone = actions?.querySelector('.header__phone');
+        if (!brand || !actions || !phone || !isMobileNav()) {
             header.classList.remove('header--hide-phone');
             return;
         }
-        const gap = actions.getBoundingClientRect().left - brand.getBoundingClientRect().right;
+        const gap = phone.getBoundingClientRect().left - brand.getBoundingClientRect().right;
         const wasHidden = header.classList.contains('header--hide-phone');
-        const hide = wasHidden ? gap < 12 : gap <= 1;
+        const hide = wasHidden ? gap < 20 : gap <= 10;
         header.classList.toggle('header--hide-phone', hide);
     };
 
@@ -632,7 +633,6 @@ const initSiteLoader = async () => {
         const cells = track ? [...track.querySelectorAll('.gallery__cell')] : [];
         if (track && prevBtn && nextBtn && status && cells.length) {
         const GAP = 12;
-        const CELL_EXTRA_H = 5;
         let page = 0, resizeTimer, isGalleryAnimating = false;
 
         const perPage = () => innerWidth < 600 ? 1 : innerWidth < 1024 ? 2 : 3;
@@ -650,20 +650,27 @@ const initSiteLoader = async () => {
 
         const updateGallery = (instant = false) => {
             if (instant) galleryCarousel.classList.add('is-resizing');
+            const viewport = galleryCarousel.querySelector('.gallery__viewport');
+            const rawVw = viewport?.clientWidth ?? 0;
+            const vw = Math.min(
+                rawVw > 0 ? rawVw : galleryCarousel.clientWidth,
+                window.innerWidth
+            );
+            if (vw < 48) return;
+
             const per = perPage(), maxPage = totalPages() - 1;
             page = Math.min(page, maxPage);
-            const vw = galleryCarousel.querySelector('.gallery__viewport').offsetWidth;
             const startIdx = page * per;
             const visibleCount = Math.min(per, cells.length - startIdx);
             const isPartial = visibleCount < per;
-            const standardW = (vw - GAP * (per - 1)) / per;
-            const activeW = isPartial ? (vw - GAP * (visibleCount - 1)) / visibleCount : standardW;
+            const standardW = Math.max(0, (vw - GAP * (per - 1)) / per);
+            const activeW = isPartial ? Math.max(0, (vw - GAP * (visibleCount - 1)) / visibleCount) : standardW;
             const offset = startIdx * (standardW + GAP);
             cells.forEach((cell, i) => {
                 const onPage = i >= startIdx && i < startIdx + visibleCount;
                 const w = isPartial && onPage ? activeW : standardW;
                 cell.style.width = `${w}px`;
-                cell.style.height = `${w * 2 / 3 + CELL_EXTRA_H}px`;
+                cell.style.height = '';
                 if (onPage) loadGalleryCellImage(cell);
             });
             track.style.transform = `translate3d(-${offset}px, 0, 0)`;

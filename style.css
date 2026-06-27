@@ -1254,6 +1254,7 @@ html.is-revealed .hero__slide--active .hero__img {
     flex: 1;
     overflow: hidden;
     min-width: 0;
+    max-width: 100%;
     border-radius: 6px;
     border: 1px solid var(--t-gallery-border);
     background: var(--t-gallery-bg);
@@ -1277,7 +1278,9 @@ html.is-revealed .hero__slide--active .hero__img {
     overflow: hidden;
     position: relative;
     margin: 0;
-    transition: width 0.55s var(--ease), height 0.55s var(--ease);
+    aspect-ratio: 3 / 2;
+    height: auto;
+    transition: width 0.55s var(--ease);
     backface-visibility: hidden;
 }
 
@@ -3039,6 +3042,16 @@ html.is-revealed .faq-cta__card {
     margin-left: auto;
 }
 
+@media (max-width: 720px) {
+    .header--mobile-nav .header__actions {
+        display: none;
+    }
+
+    .header--mobile-nav .theme-btn {
+        margin-left: auto;
+    }
+}
+
 .header--mobile-nav .nav {
     position: fixed;
     z-index: -1;
@@ -3176,6 +3189,16 @@ html.is-revealed .faq-cta__card {
 
     .header.header--hide-phone .theme-btn {
         margin-left: auto;
+    }
+
+    @media (max-width: 720px) {
+        .header .header__actions {
+            display: none;
+        }
+
+        .header .theme-btn {
+            margin-left: auto;
+        }
     }
 
     .header .nav {
@@ -3454,5 +3477,15 @@ html.is-revealed .faq-cta__card {
     .product-item.is-open .product-panel {
         max-height: 420px;
         grid-template-rows: none;
+    }
+
+    .gallery__viewport {
+        max-width: 100%;
+    }
+
+    .gallery__cell {
+        aspect-ratio: 3 / 2;
+        height: auto !important;
+        max-height: min(62vw, 300px);
     }
 }

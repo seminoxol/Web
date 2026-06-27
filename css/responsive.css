@@ -65,6 +65,16 @@
     margin-left: auto;
 }
 
+@media (max-width: 720px) {
+    .header--mobile-nav .header__actions {
+        display: none;
+    }
+
+    .header--mobile-nav .theme-btn {
+        margin-left: auto;
+    }
+}
+
 .header--mobile-nav .nav {
     position: fixed;
     z-index: -1;
@@ -202,6 +212,16 @@
 
     .header.header--hide-phone .theme-btn {
         margin-left: auto;
+    }
+
+    @media (max-width: 720px) {
+        .header .header__actions {
+            display: none;
+        }
+
+        .header .theme-btn {
+            margin-left: auto;
+        }
     }
 
     .header .nav {
@@ -480,5 +500,15 @@
     .product-item.is-open .product-panel {
         max-height: 420px;
         grid-template-rows: none;
+    }
+
+    .gallery__viewport {
+        max-width: 100%;
+    }
+
+    .gallery__cell {
+        aspect-ratio: 3 / 2;
+        height: auto !important;
+        max-height: min(62vw, 300px);
     }
 }

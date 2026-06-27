@@ -935,6 +935,7 @@ html.is-revealed .hero__slide--active .hero__img {
     flex: 1;
     overflow: hidden;
     min-width: 0;
+    max-width: 100%;
     border-radius: 6px;
     border: 1px solid var(--t-gallery-border);
     background: var(--t-gallery-bg);
@@ -958,7 +959,9 @@ html.is-revealed .hero__slide--active .hero__img {
     overflow: hidden;
     position: relative;
     margin: 0;
-    transition: width 0.55s var(--ease), height 0.55s var(--ease);
+    aspect-ratio: 3 / 2;
+    height: auto;
+    transition: width 0.55s var(--ease);
     backface-visibility: hidden;
 }
 
