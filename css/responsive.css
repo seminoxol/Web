@@ -311,6 +311,13 @@
 
     .products__head,
     .gallery__head { flex-direction: column; align-items: flex-start; }
+    .gallery__footer {
+        margin-top: 12px;
+    }
+    .gallery__dot {
+        width: 11px;
+        height: 11px;
+    }
     .product-row { grid-template-columns: 1fr auto; gap: 16px; }
     .product-list--catalog .product-row__label { padding-right: 4px; }
     .product-list--catalog .product-row__cn { white-space: normal; }

@@ -1390,6 +1390,12 @@ details.product-item[open] > .product-panel .product-panel__inner {
     color: var(--t-arrow-color);
     box-shadow: var(--t-arrow-shadow);
     transition: background 0.3s, border-color 0.3s, color 0.3s, opacity 0.3s, box-shadow 0.3s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+    pointer-events: auto;
+    position: relative;
+    z-index: 2;
 }
 .gallery__arrow:hover:not(:disabled) {
     background: var(--t-arrow-hover-bg);
@@ -1420,19 +1426,30 @@ details.product-item[open] > .product-panel .product-panel__inner {
 
 .gallery__dots {
     display: flex;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 10px;
     justify-content: center;
+    padding: 4px 0;
+    min-height: 28px;
 }
 
 .gallery__dot {
-    width: 8px;
-    height: 8px;
+    position: relative;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     border: none;
     padding: 0;
     background: var(--t-dot);
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     transition: background 0.3s, transform 0.3s;
+}
+.gallery__dot::before {
+    content: '';
+    position: absolute;
+    inset: -14px;
 }
 .gallery__dot--active {
     background: var(--t-dot-active);
@@ -3406,6 +3423,13 @@ html.is-revealed .faq-cta__card {
 
     .products__head,
     .gallery__head { flex-direction: column; align-items: flex-start; }
+    .gallery__footer {
+        margin-top: 12px;
+    }
+    .gallery__dot {
+        width: 11px;
+        height: 11px;
+    }
     .product-row { grid-template-columns: 1fr auto; gap: 16px; }
     .product-list--catalog .product-row__label { padding-right: 4px; }
     .product-list--catalog .product-row__cn { white-space: normal; }

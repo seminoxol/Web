@@ -590,9 +590,11 @@ const initSiteLoader = async () => {
         const track = document.getElementById('galleryTrack');
         const [prevBtn, nextBtn, status, dotsContainer] = ['galleryPrev', 'galleryNext', 'galleryStatus', 'galleryDots'].map(id => document.getElementById(id));
         const cells = track ? [...track.querySelectorAll('.gallery__cell')] : [];
-        if (track && prevBtn && nextBtn && status && cells.length) {
+        if (track && prevBtn && nextBtn && cells.length) {
         const GAP = 12;
         let page = 0, resizeTimer, isGalleryAnimating = false;
+        let touchStartX = 0;
+        const viewport = galleryCarousel.querySelector('.gallery__viewport');
 
         const perPage = () => innerWidth < 600 ? 1 : innerWidth < 1024 ? 2 : 3;
         const totalPages = () => Math.ceil(cells.length / perPage());
@@ -602,17 +604,33 @@ const initSiteLoader = async () => {
             if (img) loadImage(img);
         };
 
-        const refreshGalleryLayout = (instant = true) => {
-            initGallery();
-            updateGallery(instant);
+        const finishGalleryAnim = () => {
+            isGalleryAnimating = false;
+            prevBtn.disabled = page === 0;
+            nextBtn.disabled = page >= totalPages() - 1;
+        };
+
+        const buildDots = () => {
+            if (!dotsContainer) return;
+            dotsContainer.replaceChildren(...Array.from({ length: totalPages() }, (_, i) => {
+                const dot = document.createElement('button');
+                dot.type = 'button';
+                dot.className = `gallery__dot${i === page ? ' gallery__dot--active' : ''}`;
+                dot.setAttribute('aria-label', `Go to page ${i + 1}`);
+                dot.addEventListener('click', () => goToPage(i));
+                return dot;
+            }));
         };
 
         const updateGallery = (instant = false) => {
             if (instant) galleryCarousel.classList.add('is-resizing');
-            const viewport = galleryCarousel.querySelector('.gallery__viewport');
             const rawVw = viewport?.getBoundingClientRect().width ?? viewport?.clientWidth ?? 0;
             const vw = Math.max(0, Math.min(rawVw, galleryCarousel.getBoundingClientRect().width, window.innerWidth));
-            if (vw < 48) return;
+            if (vw < 48) {
+                if (instant) galleryCarousel.classList.remove('is-resizing');
+                requestAnimationFrame(() => updateGallery(instant));
+                return;
+            }
 
             const per = perPage(), maxPage = totalPages() - 1;
             page = Math.min(page, maxPage);
@@ -640,7 +658,9 @@ const initSiteLoader = async () => {
             track.style.transform = `translate3d(-${offset}px, 0, 0)`;
             prevBtn.disabled = page === 0 || isGalleryAnimating;
             nextBtn.disabled = page >= maxPage || isGalleryAnimating;
-            status.textContent = `Showing ${page * per + 1}–${Math.min((page + 1) * per, cells.length)} of ${cells.length}`;
+            if (status) {
+                status.textContent = `Showing ${page * per + 1}–${Math.min((page + 1) * per, cells.length)} of ${cells.length}`;
+            }
             dotsContainer?.querySelectorAll('.gallery__dot').forEach((dot, i) => dot.classList.toggle('gallery__dot--active', i === page));
             if (instant) requestAnimationFrame(() => galleryCarousel.classList.remove('is-resizing'));
         };
@@ -651,28 +671,16 @@ const initSiteLoader = async () => {
             if (target === page || isGalleryAnimating) return;
             isGalleryAnimating = true;
             page = target;
-            updateGallery();
+            updateGallery(false);
+            clearTimeout(goToPage._animTimer);
+            goToPage._animTimer = setTimeout(finishGalleryAnim, 650);
         };
 
         track.addEventListener('transitionend', e => {
             if (e.target !== track || e.propertyName !== 'transform') return;
-            isGalleryAnimating = false;
-            prevBtn.disabled = page === 0;
-            nextBtn.disabled = page >= totalPages() - 1;
+            clearTimeout(goToPage._animTimer);
+            finishGalleryAnim();
         });
-
-        const buildDots = () => {
-            if (!dotsContainer) return;
-            dotsContainer.replaceChildren(...Array.from({ length: totalPages() }, (_, i) => {
-                const dot = document.createElement('button');
-                dot.type = 'button';
-                dot.className = `gallery__dot${i === page ? ' gallery__dot--active' : ''}`;
-                dot.setAttribute('role', 'button');
-                dot.setAttribute('aria-label', `Go to page ${i + 1}`);
-                dot.addEventListener('click', () => goToPage(i));
-                return dot;
-            }));
-        };
 
         let galleryReady = false;
         const initGallery = () => {
@@ -682,20 +690,30 @@ const initSiteLoader = async () => {
             updateGallery(true);
         };
 
-        bindTap(prevBtn, () => { initGallery(); goToPage(page - 1); });
-        bindTap(nextBtn, () => { initGallery(); goToPage(page + 1); });
-        window.addEventListener('resize', () => (clearTimeout(resizeTimer), resizeTimer = setTimeout(() => refreshGalleryLayout(true), 150)), { passive: true });
-        requestAnimationFrame(() => requestAnimationFrame(() => refreshGalleryLayout(true)));
+        const onPrev = () => { initGallery(); goToPage(page - 1); };
+        const onNext = () => { initGallery(); goToPage(page + 1); };
+        prevBtn.addEventListener('click', onPrev);
+        nextBtn.addEventListener('click', onNext);
 
-        if (typeof IntersectionObserver !== 'undefined') {
-            const galleryIo = new IntersectionObserver(entries => {
-                entries.forEach(({ isIntersecting }) => {
-                    if (!isIntersecting) return;
-                    refreshGalleryLayout(true);
-                });
-            }, { rootMargin: '120px' });
-            galleryIo.observe(galleryCarousel);
+        if (viewport && isTouchUI()) {
+            viewport.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0]?.clientX ?? 0;
+            }, { passive: true });
+            viewport.addEventListener('touchend', e => {
+                const endX = e.changedTouches[0]?.clientX ?? 0;
+                const dx = endX - touchStartX;
+                if (Math.abs(dx) < 48) return;
+                initGallery();
+                if (dx < 0) onNext();
+                else onPrev();
+            }, { passive: true });
         }
+
+        window.addEventListener('resize', () => (clearTimeout(resizeTimer), resizeTimer = setTimeout(() => {
+            buildDots();
+            updateGallery(true);
+        }, 150)), { passive: true });
+        initGallery();
         }
     }
     } catch (galleryErr) {
