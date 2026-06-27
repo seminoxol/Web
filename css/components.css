@@ -1505,7 +1505,7 @@ details.product-item[open] > .product-panel .product-panel__inner {
     max-width: 100%;
 }
 .qf-type-glass__grid .qf-picker.is-open {
-    z-index: 45;
+    z-index: 260;
 }
 .qf-type-glass__grid .qf-picker__trigger {
     font-size: 14px;
@@ -1519,12 +1519,46 @@ details.product-item[open] > .product-panel .product-panel__inner {
 }
 .qf-type-glass__grid .qf-picker__panel {
     min-width: 100%;
-    width: max(100%, 220px);
+    width: 100%;
 }
 .qf-type-glass__grid .qf__field:last-child .qf-picker__panel {
     left: auto;
     right: 0;
 }
+
+/* Desktop: opaque full-width glass pickers — no bleed-through from hints/status below */
+html:not(.touch-ui):not(.mobile-ui) .qf-picker__panel {
+    background: var(--t-picker-panel-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+html:not(.touch-ui):not(.mobile-ui) .qf-picker__panel::before {
+    background: linear-gradient(to bottom, var(--t-picker-panel-bg) 15%, transparent);
+}
+html:not(.touch-ui):not(.mobile-ui) .qf-picker__panel::after {
+    background: linear-gradient(to top, var(--t-picker-panel-bg) 15%, transparent);
+}
+html:not(.touch-ui):not(.mobile-ui) .qf-picker__list {
+    background: var(--t-picker-panel-bg);
+}
+html:not(.touch-ui):not(.mobile-ui) .qf-picker__list .product-row,
+html:not(.touch-ui):not(.mobile-ui) .qf-picker__list .qf-picker__option {
+    background: var(--t-picker-panel-bg);
+}
+html:not(.touch-ui):not(.mobile-ui) .qf-type-glass__grid > .qf__field:nth-child(2):has(.qf-picker.is-open) .qf-picker__panel,
+html:not(.touch-ui):not(.mobile-ui) .qf-type-glass__grid > .qf__field:nth-child(3):has(.qf-picker.is-open) .qf-picker__panel {
+    width: calc(200% + 12px);
+    min-width: calc(200% + 12px);
+}
+html:not(.touch-ui):not(.mobile-ui) .qf-type-glass__grid > .qf__field:nth-child(2):has(.qf-picker.is-open) .qf-picker__panel {
+    left: 0;
+    right: auto;
+}
+html:not(.touch-ui):not(.mobile-ui) .qf-type-glass__grid > .qf__field:nth-child(3):has(.qf-picker.is-open) .qf-picker__panel {
+    left: auto;
+    right: 0;
+}
+
 .qf-type-glass__grid .qf-picker__list .product-row,
 .qf-picker__list .qf-picker__option {
     padding: 10px 12px;
@@ -1550,7 +1584,7 @@ details.product-item[open] > .product-panel .product-panel__inner {
 }
 
 .qf-picker { position: relative; }
-.qf-picker.is-open { z-index: 250; }
+.qf-picker.is-open { z-index: 260; }
 .qf-picker:not(.is-open) > .qf-picker__panel { display: none !important; }
 html:not(.touch-ui):not(.mobile-ui) .qf-picker__native {
     display: none;
@@ -1682,15 +1716,16 @@ html:not(.touch-ui):not(.mobile-ui) .qf-picker--disabled .qf-picker__native {
 .qf-picker.is-open .qf-picker__chevron { transform: rotate(180deg); opacity: 1; }
 .qf-picker__panel {
     position: absolute;
-    z-index: 30;
+    z-index: 1;
     left: 0;
     right: 0;
     top: calc(100% + 8px);
     border: 1px solid var(--t-form-border);
     border-radius: 12px;
-    background: var(--t-form-bg);
+    background: var(--t-picker-panel-bg, var(--t-form-bg));
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(184, 220, 240, 0.06);
-    backdrop-filter: var(--t-form-blur);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     overflow: hidden;
 }
 .qf-picker__panel::before,
