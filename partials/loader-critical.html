@@ -4,10 +4,7 @@
             overflow: hidden;
             background: #061528;
         }
-        html.is-loading body > *:not(#siteLoader) {
-            visibility: hidden;
-        }
-        html.is-revealed #siteLoader {
+        html.is-revealed #siteLoader:not(.is-exiting) {
             display: none !important;
         }
         #siteLoader {
@@ -21,6 +18,9 @@
             background: transparent;
             color: #b8dcf0;
             font-family: Georgia, 'Times New Roman', serif;
+            pointer-events: none;
+        }
+        #siteLoader.is-exiting {
             pointer-events: none;
         }
         #siteLoader * {

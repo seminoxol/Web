@@ -7,8 +7,29 @@ const LOADER_CURTAIN_MS = 2200;
 const LOADER_REVEAL_MS = LOADER_CURTAIN_MS + 200;
 const LOADER_OPEN_PERCENT = 100;
 const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
-    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const waitLoaderCurtain = (loader, maxMs = LOADER_CURTAIN_MS + 300) => new Promise(resolve => {
+    const curtains = [...(loader?.querySelectorAll('.site-loader__curtain') ?? [])];
+    if (!curtains.length) return resolve();
+    let settled = false;
+    const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+    };
+    setTimeout(finish, maxMs);
+    let remaining = curtains.length;
+    const onEnd = () => {
+        remaining -= 1;
+        if (remaining <= 0) finish();
+    };
+    curtains.forEach(el => {
+        el.addEventListener('animationend', onEnd, { once: true });
+        el.addEventListener('webkitAnimationEnd', onEnd, { once: true });
+    });
+});
 const loadImage = img => {
     if (!img?.dataset.src) return;
     img.src = img.dataset.src;
@@ -79,27 +100,23 @@ const initFaqAccordion = () => {
 const playLoaderExit = async () => {
     const loader = document.getElementById('siteLoader');
     const root = document.documentElement;
-    if (!loader || root.classList.contains('is-revealed') || loader.classList.contains('is-exiting')) return;
+    if (!loader || loader.classList.contains('is-exiting')) return;
+    if (root.classList.contains('is-revealed')) return;
 
-    if (isIOS) {
+    const releasePage = () => {
         root.classList.remove('is-loading');
         root.classList.add('is-revealed');
         root.removeAttribute('aria-busy');
         document.body.style.overflow = '';
         document.documentElement.style.overflow = '';
-        loader.remove();
-        return;
-    }
+    };
 
     loader.classList.add('is-exiting');
     loader.setAttribute('aria-hidden', 'true');
-    root.removeAttribute('aria-busy');
 
-    await new Promise(resolve => setTimeout(resolve, LOADER_HOLD_MS));
-    root.classList.remove('is-loading');
-    root.classList.add('is-revealed');
-
-    await new Promise(resolve => setTimeout(resolve, LOADER_REVEAL_MS));
+    await delay(LOADER_HOLD_MS);
+    releasePage();
+    await waitLoaderCurtain(loader);
     loader.remove();
 };
 
@@ -126,7 +143,7 @@ const initSiteLoader = async () => {
         return;
     }
 
-    if (isIOS || prefersReducedMotion) {
+    if (prefersReducedMotion) {
         finishLoader();
         return;
     }
@@ -177,13 +194,12 @@ const initSiteLoader = async () => {
         });
 
         const elapsed = performance.now() - started;
-        if (!prefersReducedMotion && !isIOS && elapsed < LOADER_MIN_MS) {
-            await new Promise(resolve => setTimeout(resolve, LOADER_MIN_MS - elapsed));
+        if (!prefersReducedMotion && elapsed < LOADER_MIN_MS) {
+            await delay(LOADER_MIN_MS - elapsed);
         }
 
-        if (prefersReducedMotion || isIOS) return finishLoader();
+        if (prefersReducedMotion) return finishLoader();
 
-        await new Promise(resolve => setTimeout(resolve, LOADER_HOLD_MS));
         await playLoaderExit();
     } catch {
         finishLoader();

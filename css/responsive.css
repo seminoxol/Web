@@ -180,20 +180,14 @@
     html { scroll-behavior: auto; }
 }
 
-/* iOS Safari: loader overlay and scroll bugs */
+/* iOS Safari: scroll and section rendering */
 @supports (-webkit-touch-callout: none) {
-    html,
+    html:not(.is-loading),
     body {
-        overflow-y: auto !important;
+        overflow-y: auto;
         height: auto;
         min-height: 100%;
         -webkit-overflow-scrolling: touch;
-    }
-
-    html.is-revealed #siteLoader,
-    #siteLoader.is-exiting {
-        display: none !important;
-        visibility: hidden !important;
     }
 
     .hero__media {

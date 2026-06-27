@@ -219,7 +219,7 @@ html.is-revealed .site-reveal--delay-3 {
     to { opacity: 1; transform: translateY(0); }
 }
 
-html.is-revealed #siteLoader {
+html.is-revealed #siteLoader:not(.is-exiting) {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;
