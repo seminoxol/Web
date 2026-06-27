@@ -41,7 +41,7 @@ const collectCriticalImageUrls = () => ['/images/pcilogo.png'];
 const initInternalNavSkipLoader = () => {
     document.querySelectorAll('a[href]').forEach(a => {
         const href = a.getAttribute('href');
-        if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || a.target) return;
+        if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('sms:') || a.target) return;
         try {
             const url = new URL(href, location.origin);
             if (url.origin === location.origin) {
