@@ -460,7 +460,8 @@
         grid-template-rows: none;
     }
 
-    .product-item.is-open .product-panel {
+    .product-item.is-open .product-panel,
+    details.product-item[open] > .product-panel {
         max-height: 420px;
         grid-template-rows: none;
     }

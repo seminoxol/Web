@@ -1144,6 +1144,13 @@ html.is-revealed .hero__slide--active .hero__img {
 .product-list--catalog .product-item:last-child {
     border-bottom: none;
 }
+.product-list--catalog summary.product-row {
+    list-style: none;
+    cursor: pointer;
+}
+.product-list--catalog summary.product-row::-webkit-details-marker {
+    display: none;
+}
 .product-list--catalog .product-row {
     border-bottom: none;
     user-select: none;
@@ -1155,6 +1162,13 @@ html.is-revealed .hero__slide--active .hero__img {
 .product-list--catalog .product-row:focus-visible {
     outline: 2px solid var(--t-accent);
     outline-offset: 3px;
+}
+.product-list--catalog details[open] > summary.product-row::before {
+    background: var(--t-row-hover);
+}
+.product-list--catalog details[open] > summary.product-row .product-row__arrow {
+    color: var(--t-accent);
+    transform: rotate(90deg);
 }
 .product-list--catalog .product-item.is-open .product-row::before {
     background: var(--t-row-hover);
@@ -1169,7 +1183,8 @@ html.is-revealed .hero__slide--active .hero__img {
     overflow: hidden;
     transition: grid-template-rows 0.45s var(--ease);
 }
-.product-item.is-open .product-panel {
+.product-item.is-open .product-panel,
+details.product-item[open] > .product-panel {
     grid-template-rows: 1fr;
 }
 .product-panel__inner {
@@ -1180,7 +1195,8 @@ html.is-revealed .hero__slide--active .hero__img {
     padding: 0 16px;
     transition: padding 0.45s var(--ease);
 }
-.product-item.is-open .product-panel__inner {
+.product-item.is-open .product-panel__inner,
+details.product-item[open] > .product-panel .product-panel__inner {
     padding: 0 16px 20px;
 }
 .product-panel__img-wrap {
@@ -1192,7 +1208,7 @@ html.is-revealed .hero__slide--active .hero__img {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 }
-.product-panel__img:not([hidden]) {
+.product-panel__img {
     display: block;
     box-sizing: border-box;
     width: auto;
@@ -1693,8 +1709,10 @@ html.is-revealed .hero__slide--active .hero__img {
 .qf-picker { position: relative; }
 .qf-picker.is-open { z-index: 250; }
 .qf-picker:not(.is-open) > .qf-picker__panel { display: none !important; }
-.qf-picker__native {
+html:not(.touch-ui) .qf-picker__native {
     display: none;
+}
+.qf-picker__native {
     width: 100%;
     font-family: var(--font-body);
     font-size: 16px;
@@ -3481,7 +3499,8 @@ html.is-revealed .faq-cta__card {
         grid-template-rows: none;
     }
 
-    .product-item.is-open .product-panel {
+    .product-item.is-open .product-panel,
+    details.product-item[open] > .product-panel {
         max-height: 420px;
         grid-template-rows: none;
     }

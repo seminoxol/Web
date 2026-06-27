@@ -583,74 +583,14 @@ const initSiteLoader = async () => {
 
     const productCatalog = document.querySelector('.product-list--catalog');
 
-    const setProductPanelImage = (item, btn) => {
-        const img = item.querySelector('.product-panel__img');
-        const ph = item.querySelector('.product-panel__img-ph');
-        if (!img || !ph) return;
-        const src = btn.dataset.image?.trim();
-        const alt = btn.querySelector('.product-row__label')?.textContent.trim() ?? '';
-        if (src) {
-            img.onload = () => {
-                img.hidden = false;
-                ph.hidden = true;
-            };
-            img.onerror = () => {
-                img.hidden = true;
-                ph.hidden = false;
-                ph.textContent = 'Image unavailable';
-            };
-            img.src = src;
-            img.alt = alt;
-            img.loading = 'eager';
-            img.decoding = 'async';
-            img.draggable = false;
-            if (img.complete && img.naturalWidth > 0) {
-                img.hidden = false;
-                ph.hidden = true;
-            }
-        } else {
-            img.removeAttribute('src');
-            img.hidden = true;
-            ph.hidden = false;
-        }
-    };
-
-    const closeProductItem = item => {
-        const btn = item.querySelector('.product-row');
-        const panel = item.querySelector('.product-panel');
-        item.classList.remove('is-open');
-        btn?.setAttribute('aria-expanded', 'false');
-        panel?.setAttribute('aria-hidden', 'true');
-    };
-
-    const openProductItem = (item, btn) => {
-        item.classList.add('is-open');
-        btn.setAttribute('aria-expanded', 'true');
-        item.querySelector('.product-panel')?.setAttribute('aria-hidden', 'false');
-        setProductPanelImage(item, btn);
-    };
-
-    const handleProductRow = btn => {
-        const item = btn.closest('.product-item');
-        if (!item || !productCatalog) return;
-
-        const isOpen = item.classList.contains('is-open');
-
-        productCatalog.querySelectorAll('.product-item.is-open').forEach(other => {
-            if (other !== item) closeProductItem(other);
-        });
-
-        if (isOpen) closeProductItem(item);
-        else openProductItem(item, btn);
-    };
-
     if (productCatalog) {
-        productCatalog.querySelectorAll('.product-row').forEach(btn => {
-            btn.addEventListener('click', () => handleProductRow(btn));
-        });
-        document.addEventListener('keydown', e => {
-            if (e.key !== 'Escape') return;
-            productCatalog.querySelectorAll('.product-item.is-open').forEach(closeProductItem);
+        productCatalog.querySelectorAll('details.product-item').forEach(detail => {
+            detail.addEventListener('toggle', () => {
+                if (!detail.open) return;
+                productCatalog.querySelectorAll('details.product-item').forEach(other => {
+                    if (other !== detail) other.open = false;
+                });
+            });
         });
     }
 
@@ -903,6 +843,9 @@ const initSiteLoader = async () => {
             };
 
             const renderOptions = options => {
+                if (options.length && select.options.length > 1 && select.id === 'qf-product-native') {
+                    return;
+                }
                 clearSelect();
                 const placeholderOpt = document.createElement('option');
                 placeholderOpt.value = '';
@@ -1176,7 +1119,12 @@ const initSiteLoader = async () => {
         updateAddItemBtn();
     };
 
-    if (productPicker) productPicker.renderOptions(PRODUCT_OPTIONS);
+    if (productPicker) {
+        const productNative = document.getElementById('qf-product-native');
+        if (!(useNativePickers && productNative && productNative.options.length > 1)) {
+            productPicker.renderOptions(PRODUCT_OPTIONS);
+        }
+    }
     if (typePicker) typePicker.setDisabled(true);
     if (glassTypePicker) glassTypePicker.setDisabled(true);
     if (panePicker) panePicker.setDisabled(true);
