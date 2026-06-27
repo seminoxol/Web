@@ -623,6 +623,14 @@ const initSiteLoader = async () => {
             }));
         };
 
+        const wireStaticDots = () => {
+            if (!dotsContainer || dotsContainer.dataset.wired === 'true') return;
+            dotsContainer.querySelectorAll('.gallery__dot').forEach((dot, i) => {
+                bindTap(dot, () => goToPage(i));
+            });
+            dotsContainer.dataset.wired = 'true';
+        };
+
         const updateGallery = (instant = false) => {
             if (instant) galleryCarousel.classList.add('is-resizing');
             const rawVw = viewport?.getBoundingClientRect().width ?? viewport?.clientWidth ?? 0;
@@ -702,6 +710,9 @@ const initSiteLoader = async () => {
             buildDots();
             updateGallery(true);
         };
+
+        wireStaticDots();
+        document.getElementById('galleryFooter')?.classList.add('gallery__footer--ready');
 
         const onPrev = e => {
             if (prevBtn.disabled) return;

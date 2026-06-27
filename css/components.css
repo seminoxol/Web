@@ -1105,6 +1105,13 @@ details.product-item[open] > .product-panel .product-panel__inner {
     align-items: center;
     gap: 14px;
     margin-top: var(--space-element);
+    opacity: 1;
+    visibility: visible;
+}
+.gallery__footer--ready,
+#galleryFooter {
+    opacity: 1;
+    visibility: visible;
 }
 
 .gallery__status {
