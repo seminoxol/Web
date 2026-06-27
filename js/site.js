@@ -618,7 +618,7 @@ const initSiteLoader = async () => {
                 dot.type = 'button';
                 dot.className = `gallery__dot${i === page ? ' gallery__dot--active' : ''}`;
                 dot.setAttribute('aria-label', `Go to page ${i + 1}`);
-                dot.addEventListener('click', () => goToPage(i));
+                bindTap(dot, () => goToPage(i));
                 return dot;
             }));
         };
@@ -657,8 +657,15 @@ const initSiteLoader = async () => {
                 if (onPage) loadGalleryCellImage(cell);
             });
             track.style.transform = `translate3d(-${offset}px, 0, 0)`;
-            prevBtn.disabled = page === 0 || isGalleryAnimating;
-            nextBtn.disabled = page >= maxPage || isGalleryAnimating;
+            const atStart = page === 0;
+            const atEnd = page >= maxPage;
+            if (isTouchUI()) {
+                prevBtn.disabled = atStart;
+                nextBtn.disabled = atEnd;
+            } else {
+                prevBtn.disabled = atStart || isGalleryAnimating;
+                nextBtn.disabled = atEnd || isGalleryAnimating;
+            }
             if (status) {
                 status.textContent = `Showing ${page * per + 1}–${Math.min((page + 1) * per, cells.length)} of ${cells.length}`;
             }
@@ -682,6 +689,11 @@ const initSiteLoader = async () => {
             clearTimeout(goToPage._animTimer);
             finishGalleryAnim();
         });
+        track.addEventListener('webkitTransitionEnd', e => {
+            if (e.target !== track || e.propertyName !== 'transform') return;
+            clearTimeout(goToPage._animTimer);
+            finishGalleryAnim();
+        });
 
         let galleryReady = false;
         const initGallery = () => {
@@ -691,10 +703,20 @@ const initSiteLoader = async () => {
             updateGallery(true);
         };
 
-        const onPrev = () => { initGallery(); goToPage(page - 1); };
-        const onNext = () => { initGallery(); goToPage(page + 1); };
-        prevBtn.addEventListener('click', onPrev);
-        nextBtn.addEventListener('click', onNext);
+        const onPrev = e => {
+            if (prevBtn.disabled) return;
+            e?.preventDefault?.();
+            initGallery();
+            goToPage(page - 1);
+        };
+        const onNext = e => {
+            if (nextBtn.disabled) return;
+            e?.preventDefault?.();
+            initGallery();
+            goToPage(page + 1);
+        };
+        bindTap(prevBtn, onPrev);
+        bindTap(nextBtn, onNext);
 
         if (viewport && isTouchUI()) {
             viewport.addEventListener('touchstart', e => {

@@ -1014,6 +1014,8 @@ details.product-item[open] > .product-panel .product-panel__inner {
     border-radius: 6px;
     border: 1px solid var(--t-gallery-border);
     background: var(--t-gallery-bg);
+    position: relative;
+    z-index: 1;
 }
 
 .gallery__track {
@@ -1065,6 +1067,8 @@ details.product-item[open] > .product-panel .product-panel__inner {
     justify-content: center;
     width: 48px;
     height: 48px;
+    min-width: 44px;
+    min-height: 44px;
     border-radius: 50%;
     border: 1px solid var(--t-arrow-border);
     background: var(--t-arrow-bg);
@@ -1072,11 +1076,17 @@ details.product-item[open] > .product-panel .product-panel__inner {
     box-shadow: var(--t-arrow-shadow);
     transition: background 0.3s, border-color 0.3s, color 0.3s, opacity 0.3s, box-shadow 0.3s;
     touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color: rgba(184, 220, 240, 0.2);
     cursor: pointer;
     pointer-events: auto;
     position: relative;
-    z-index: 2;
+    z-index: 5;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.gallery__arrow svg {
+    pointer-events: none;
+    flex-shrink: 0;
 }
 .gallery__arrow:hover:not(:disabled) {
     background: var(--t-arrow-hover-bg);
