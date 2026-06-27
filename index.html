@@ -792,16 +792,27 @@
                     <script>
                     (function () {
                         var root = document.documentElement;
-                        if (!root.classList.contains('touch-ui')) return;
+                        var useMobilePickers = root.classList.contains('touch-ui')
+                            || matchMedia('(max-width: 768px)').matches;
+                        if (!useMobilePickers) return;
 
                         function setGlassFieldsEnabled(on) {
                             ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(function (id) {
                                 var sel = document.getElementById(id);
                                 if (!sel) return;
                                 var picker = sel.closest('.qf-picker');
-                                sel.disabled = !on;
-                                if (picker) picker.classList.toggle('qf-picker--disabled', !on);
-                                if (!on) sel.selectedIndex = 0;
+                                var trigger = picker ? picker.querySelector('.qf-picker__trigger') : null;
+                                if (on) {
+                                    sel.disabled = false;
+                                    sel.removeAttribute('disabled');
+                                    if (picker) picker.classList.remove('qf-picker--disabled');
+                                    if (trigger) trigger.removeAttribute('disabled');
+                                } else {
+                                    sel.disabled = true;
+                                    if (picker) picker.classList.add('qf-picker--disabled');
+                                    if (trigger) trigger.setAttribute('disabled', '');
+                                    sel.selectedIndex = 0;
+                                }
                             });
                         }
 
@@ -814,7 +825,20 @@
                             standard.hidden = isGlass;
                             glass.hidden = !isGlass;
                             if (typeLabel) typeLabel.hidden = isGlass;
-                            setGlassFieldsEnabled(isGlass);
+                            if (isGlass) {
+                                requestAnimationFrame(function () { setGlassFieldsEnabled(true); });
+                            } else {
+                                setGlassFieldsEnabled(false);
+                            }
+                        }
+
+                        function onProductNativeChange(sel) {
+                            var hidden = document.getElementById('qf-product');
+                            if (hidden) hidden.value = sel.value;
+                            syncTypePanels(sel.value);
+                            document.dispatchEvent(new CustomEvent('qf-product-change', {
+                                detail: { value: sel.value }
+                            }));
                         }
 
                         var map = [
@@ -828,15 +852,12 @@
                             var sel = document.getElementById(pair[0]);
                             var hidden = document.getElementById(pair[1]);
                             if (!sel || !hidden) return;
-                            sel.addEventListener('change', function () {
+                            var onChange = function () {
                                 hidden.value = sel.value;
-                                if (pair[0] === 'qf-product-native') {
-                                    syncTypePanels(sel.value);
-                                    document.dispatchEvent(new CustomEvent('qf-product-change', {
-                                        detail: { value: sel.value }
-                                    }));
-                                }
-                            });
+                                if (pair[0] === 'qf-product-native') onProductNativeChange(sel);
+                            };
+                            sel.addEventListener('change', onChange);
+                            sel.addEventListener('input', onChange);
                         });
 
                         var productSel = document.getElementById('qf-product-native');

@@ -1495,6 +1495,7 @@ html.touch-ui .qf-picker > .qf-picker__trigger,
 html.touch-ui .qf-picker > .qf-picker__panel,
 .qf-picker--native > .qf-picker__trigger,
 .qf-picker--native > .qf-picker__panel {
+    display: none !important;
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -1504,7 +1505,6 @@ html.touch-ui .qf-picker > .qf-picker__panel,
     clip: rect(0, 0, 0, 0) !important;
     white-space: nowrap !important;
     border: 0 !important;
-    display: block !important;
     visibility: hidden !important;
     pointer-events: none !important;
 }
@@ -1512,6 +1512,11 @@ html.touch-ui .qf-picker--native,
 html.touch-ui .qf-picker:has(.qf-picker__native) {
     position: relative;
     z-index: 2;
+}
+html.touch-ui .qf-type-glass__grid .qf-picker__native,
+.qf-picker--native .qf-type-glass__grid .qf-picker__native {
+    position: relative;
+    z-index: 5;
 }
 .qf-picker__native:focus {
     background: var(--t-input-focus-bg);
@@ -1521,6 +1526,7 @@ html.touch-ui .qf-picker:has(.qf-picker__native) {
 .qf-picker--disabled .qf-picker__native {
     opacity: 0.55;
     cursor: not-allowed;
+    pointer-events: none;
 }
 .qf-picker__trigger {
     touch-action: manipulation;

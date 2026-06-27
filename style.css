@@ -1814,6 +1814,7 @@ html.touch-ui .qf-picker > .qf-picker__trigger,
 html.touch-ui .qf-picker > .qf-picker__panel,
 .qf-picker--native > .qf-picker__trigger,
 .qf-picker--native > .qf-picker__panel {
+    display: none !important;
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -1823,7 +1824,6 @@ html.touch-ui .qf-picker > .qf-picker__panel,
     clip: rect(0, 0, 0, 0) !important;
     white-space: nowrap !important;
     border: 0 !important;
-    display: block !important;
     visibility: hidden !important;
     pointer-events: none !important;
 }
@@ -1831,6 +1831,11 @@ html.touch-ui .qf-picker--native,
 html.touch-ui .qf-picker:has(.qf-picker__native) {
     position: relative;
     z-index: 2;
+}
+html.touch-ui .qf-type-glass__grid .qf-picker__native,
+.qf-picker--native .qf-type-glass__grid .qf-picker__native {
+    position: relative;
+    z-index: 5;
 }
 .qf-picker__native:focus {
     background: var(--t-input-focus-bg);
@@ -1840,6 +1845,7 @@ html.touch-ui .qf-picker:has(.qf-picker__native) {
 .qf-picker--disabled .qf-picker__native {
     opacity: 0.55;
     cursor: not-allowed;
+    pointer-events: none;
 }
 .qf-picker__trigger {
     touch-action: manipulation;
@@ -3456,12 +3462,23 @@ html.is-revealed .faq-cta__card {
     }
     .qf__submit    { width: 100%; justify-content: center; }
 
-    .qf-picker.is-open .qf-picker__panel {
-        position: fixed;
-        left: max(16px, env(safe-area-inset-left));
-        right: max(16px, env(safe-area-inset-right));
-        bottom: calc(88px + env(safe-area-inset-bottom));
-        top: auto;
+    .quote__form .qf-picker__native {
+        display: block !important;
+    }
+
+    .quote__form .qf-picker > .qf-picker__trigger,
+    .quote__form .qf-picker > .qf-picker__panel {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    .quote__form .qf-picker.is-open .qf-picker__panel {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 8px);
+        bottom: auto;
         width: auto;
         max-height: min(52vh, 380px);
         z-index: 300;
@@ -3554,8 +3571,26 @@ html.is-revealed .faq-cta__card {
         appearance: menulist;
     }
 
-    .qf-picker--disabled .qf-picker__native {
+    .quote__form .qf-picker > .qf-picker__trigger,
+    .quote__form .qf-picker > .qf-picker__panel,
+    .quote__form .qf-picker.is-open > .qf-picker__panel {
+        display: none !important;
+        visibility: hidden !important;
         pointer-events: none !important;
+    }
+
+    .quote__form .qf-picker__native {
+        display: block !important;
+    }
+
+    .qf-picker--disabled .qf-picker__native {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .qf-type-panel--glass:not([hidden]) .qf-picker:not(.qf-picker--disabled) .qf-picker__native {
+        pointer-events: auto !important;
+        opacity: 1;
     }
 
     .header--mobile-nav .nav:not(.nav--open) {

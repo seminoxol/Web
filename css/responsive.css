@@ -344,12 +344,23 @@
     }
     .qf__submit    { width: 100%; justify-content: center; }
 
-    .qf-picker.is-open .qf-picker__panel {
-        position: fixed;
-        left: max(16px, env(safe-area-inset-left));
-        right: max(16px, env(safe-area-inset-right));
-        bottom: calc(88px + env(safe-area-inset-bottom));
-        top: auto;
+    .quote__form .qf-picker__native {
+        display: block !important;
+    }
+
+    .quote__form .qf-picker > .qf-picker__trigger,
+    .quote__form .qf-picker > .qf-picker__panel {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    .quote__form .qf-picker.is-open .qf-picker__panel {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 8px);
+        bottom: auto;
         width: auto;
         max-height: min(52vh, 380px);
         z-index: 300;
@@ -442,8 +453,26 @@
         appearance: menulist;
     }
 
-    .qf-picker--disabled .qf-picker__native {
+    .quote__form .qf-picker > .qf-picker__trigger,
+    .quote__form .qf-picker > .qf-picker__panel,
+    .quote__form .qf-picker.is-open > .qf-picker__panel {
+        display: none !important;
+        visibility: hidden !important;
         pointer-events: none !important;
+    }
+
+    .quote__form .qf-picker__native {
+        display: block !important;
+    }
+
+    .qf-picker--disabled .qf-picker__native {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .qf-type-panel--glass:not([hidden]) .qf-picker:not(.qf-picker--disabled) .qf-picker__native {
+        pointer-events: auto !important;
+        opacity: 1;
     }
 
     .header--mobile-nav .nav:not(.nav--open) {

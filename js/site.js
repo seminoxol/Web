@@ -784,7 +784,7 @@ const initSiteLoader = async () => {
     const MAX_QUOTE_ITEMS = 10;
     let inquiryItems = [];
     let openPicker = null;
-    const useNativePickers = isTouchUI();
+    const useNativePickers = isTouchUI() || matchMedia('(max-width: 768px)').matches;
 
     const closePicker = picker => {
         if (!picker) return;
@@ -882,7 +882,14 @@ const initSiteLoader = async () => {
 
             const setDisabled = disabled => {
                 picker.classList.toggle('qf-picker--disabled', disabled);
-                select.disabled = disabled;
+                if (disabled) {
+                    select.disabled = true;
+                    trigger?.setAttribute('disabled', '');
+                } else {
+                    select.disabled = false;
+                    select.removeAttribute('disabled');
+                    trigger?.removeAttribute('disabled');
+                }
             };
 
             const reset = (placeholderText = placeholder) => {
@@ -896,12 +903,14 @@ const initSiteLoader = async () => {
                 select.selectedIndex = 0;
             };
 
-            select.addEventListener('change', () => {
+            const onNativeChange = () => {
                 const value = select.value;
                 hidden.value = value;
                 onSelect?.(value);
                 updateAddItemBtn();
-            });
+            };
+            select.addEventListener('change', onNativeChange);
+            select.addEventListener('input', onNativeChange);
 
             trigger?.setAttribute('tabindex', '-1');
             trigger?.setAttribute('aria-hidden', 'true');
@@ -1081,6 +1090,27 @@ const initSiteLoader = async () => {
         onSelect: () => updateAddItemBtn()
     }) : null;
 
+    const setGlassPickersEnabled = enabled => {
+        ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
+            const sel = document.getElementById(id);
+            const picker = sel?.closest('.qf-picker');
+            if (!sel) return;
+            if (enabled) {
+                sel.disabled = false;
+                sel.removeAttribute('disabled');
+                picker?.classList.remove('qf-picker--disabled');
+                picker?.querySelector('.qf-picker__trigger')?.removeAttribute('disabled');
+            } else {
+                sel.disabled = true;
+                picker?.classList.add('qf-picker--disabled');
+                picker?.querySelector('.qf-picker__trigger')?.setAttribute('disabled', '');
+            }
+        });
+        glassTypePicker?.setDisabled(!enabled);
+        panePicker?.setDisabled(!enabled);
+        thicknessPicker?.setDisabled(!enabled);
+    };
+
     const updateTypeFields = product => {
         const isGlass = product === 'Glass';
         if (qfTypeStandard) qfTypeStandard.hidden = isGlass;
@@ -1094,9 +1124,7 @@ const initSiteLoader = async () => {
             typePicker?.setDisabled(true);
             typePicker?.reset('Select product first');
             typePicker?.renderOptions([]);
-            glassTypePicker?.setDisabled(true);
-            panePicker?.setDisabled(true);
-            thicknessPicker?.setDisabled(true);
+            setGlassPickersEnabled(false);
             glassTypePicker?.reset('Choose type');
             panePicker?.reset('Choose pane');
             thicknessPicker?.reset('Choose mm');
@@ -1109,33 +1137,29 @@ const initSiteLoader = async () => {
 
         if (isGlass) {
             typePicker?.setDisabled(true);
-            glassTypePicker?.setDisabled(false);
-            panePicker?.setDisabled(false);
-            thicknessPicker?.setDisabled(false);
-            ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
-                const sel = document.getElementById(id);
-                const picker = sel?.closest('.qf-picker');
-                if (sel) sel.disabled = false;
-                picker?.classList.remove('qf-picker--disabled');
-            });
-            glassTypePicker?.renderOptions(GLASS_TYPE_OPTIONS);
-            panePicker?.renderOptions(PANE_OPTIONS);
-            thicknessPicker?.renderOptions(THICKNESS_OPTIONS);
-        } else {
-            glassTypePicker?.setDisabled(true);
-            panePicker?.setDisabled(true);
-            thicknessPicker?.setDisabled(true);
-            glassTypePicker?.reset('Choose type');
-            panePicker?.reset('Choose pane');
-            thicknessPicker?.reset('Choose mm');
-            glassTypePicker?.renderOptions([]);
-            panePicker?.renderOptions([]);
-            thicknessPicker?.renderOptions([]);
-            const types = TYPE_OPTIONS[product] ?? [];
-            typePicker?.reset(product ? 'Select type' : 'Select product first');
-            typePicker?.renderOptions(types);
-            typePicker?.setDisabled(!types.length);
+            const enableGlass = () => {
+                setGlassPickersEnabled(true);
+                glassTypePicker?.renderOptions(GLASS_TYPE_OPTIONS);
+                panePicker?.renderOptions(PANE_OPTIONS);
+                thicknessPicker?.renderOptions(THICKNESS_OPTIONS);
+                updateAddItemBtn();
+            };
+            if (useNativePickers) requestAnimationFrame(enableGlass);
+            else enableGlass();
+            return;
         }
+
+        setGlassPickersEnabled(false);
+        glassTypePicker?.reset('Choose type');
+        panePicker?.reset('Choose pane');
+        thicknessPicker?.reset('Choose mm');
+        glassTypePicker?.renderOptions([]);
+        panePicker?.renderOptions([]);
+        thicknessPicker?.renderOptions([]);
+        const types = TYPE_OPTIONS[product] ?? [];
+        typePicker?.reset(product ? 'Select type' : 'Select product first');
+        typePicker?.renderOptions(types);
+        typePicker?.setDisabled(!types.length);
         updateAddItemBtn();
     };
 
@@ -1145,11 +1169,6 @@ const initSiteLoader = async () => {
             productPicker.renderOptions(PRODUCT_OPTIONS);
         }
     }
-    if (typePicker) typePicker.setDisabled(true);
-    if (glassTypePicker) glassTypePicker.setDisabled(true);
-    if (panePicker) panePicker.setDisabled(true);
-    if (thicknessPicker) thicknessPicker.setDisabled(true);
-
     document.addEventListener('qf-product-change', e => {
         updateTypeFields(e.detail?.value ?? '');
     });
@@ -1158,16 +1177,25 @@ const initSiteLoader = async () => {
         document.getElementById('qf-product-native')?.value
         || document.getElementById('qf-product')?.value
         || '';
-    if (initialProduct) updateTypeFields(initialProduct);
+    updateTypeFields(initialProduct);
 
     if (!useNativePickers) {
         document.addEventListener('click', e => {
             if (!e.target.closest('.qf-picker')) closeAllPickers();
         });
     }
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeAllPickers();
-    });
+
+    if (!useNativePickers) {
+        const closeQuotePickersOnScroll = () => closeAllPickers();
+        window.addEventListener('scroll', closeQuotePickersOnScroll, { passive: true, capture: true });
+        document.getElementById('quote')?.addEventListener('scroll', closeQuotePickersOnScroll, { passive: true, capture: true });
+    }
+
+    if (!useNativePickers) {
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeAllPickers();
+        });
+    }
 
     const parseQuantity = value => {
         const n = parseInt(String(value ?? '1'), 10);
