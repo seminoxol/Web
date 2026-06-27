@@ -1305,7 +1305,7 @@ details.product-item[open] > .product-panel .product-panel__inner {
 }
 
 .gallery {
-    overflow: hidden;
+    overflow: visible;
     background: var(--grad-gallery);
     color: var(--t-fg);
 }
@@ -1344,6 +1344,7 @@ details.product-item[open] > .product-panel .product-panel__inner {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
 }
 .gallery__viewport--scroll::-webkit-scrollbar {
     display: none;
@@ -1384,7 +1385,21 @@ details.product-item[open] > .product-panel .product-panel__inner {
     scroll-snap-align: start;
     scroll-snap-stop: always;
     transition: none !important;
+    flex: 0 0 100%;
+    width: 100%;
     flex-shrink: 0;
+}
+@media (min-width: 600px) {
+    .gallery__viewport--scroll .gallery__cell {
+        flex: 0 0 auto;
+        width: auto;
+    }
+}
+
+.gallery__viewport--scroll .gallery__cell img {
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-select: none;
 }
 
 .gallery__cell img {
@@ -3706,6 +3721,15 @@ html.is-revealed .faq-cta__card {
 
     .gallery__viewport--scroll .gallery__cell {
         max-height: min(56vw, 280px) !important;
+    }
+
+    .gallery__viewport--scroll {
+        touch-action: pan-x pan-y;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .gallery {
+        overflow: visible !important;
     }
 
     .gallery__viewport--scroll .gallery__cell img {

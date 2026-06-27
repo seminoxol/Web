@@ -536,6 +536,15 @@
         max-height: min(56vw, 280px) !important;
     }
 
+    .gallery__viewport--scroll {
+        touch-action: pan-x pan-y;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .gallery {
+        overflow: visible !important;
+    }
+
     .gallery__viewport--scroll .gallery__cell img {
         position: relative;
         display: block;
