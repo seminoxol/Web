@@ -43,7 +43,19 @@
     let items = [];
     let tapLock = 0;
     let refreshTimer = 0;
+    let syncingHiddens = false;
     const fieldCache = Object.create(null);
+
+    const withFieldSyncSuppressed = fn => {
+        window.__qfSuppressFieldSync = (window.__qfSuppressFieldSync || 0) + 1;
+        try {
+            return fn();
+        } finally {
+            window.__qfSuppressFieldSync = Math.max(0, (window.__qfSuppressFieldSync || 1) - 1);
+        }
+    };
+
+    const shouldIgnoreFieldEvent = () => Boolean(window.__qfSuppressFieldSync);
 
     // Mobile/touch only — desktop uses custom pickers via site.js (hidden inputs).
     if (!$('quoteForm') || !$(IDS.addBtn) || !isTouchUI()) return;
@@ -124,28 +136,36 @@
     };
 
     const syncHiddens = () => {
-        HIDDEN_PAIRS.forEach(([selectId, hiddenId]) => {
-            const sel = $(selectId);
-            const hidden = $(hiddenId);
-            if (!sel || !hidden) return;
-            const fromNative = readSelectRaw(sel);
-            if (fromNative) {
-                hidden.value = fromNative;
-                return;
-            }
-            const fromHidden = hidden.value?.trim() || '';
-            if (fromHidden) {
-                sel.value = fromHidden;
-                if (sel.value !== fromHidden) {
-                    for (let i = 0; i < sel.options.length; i++) {
-                        if (sel.options[i].value === fromHidden) {
-                            sel.selectedIndex = i;
-                            break;
+        if (syncingHiddens) return;
+        syncingHiddens = true;
+        try {
+            withFieldSyncSuppressed(() => {
+                HIDDEN_PAIRS.forEach(([selectId, hiddenId]) => {
+                    const sel = $(selectId);
+                    const hidden = $(hiddenId);
+                    if (!sel || !hidden) return;
+                    const fromNative = readSelectRaw(sel);
+                    if (fromNative) {
+                        if (hidden.value !== fromNative) hidden.value = fromNative;
+                        return;
+                    }
+                    const fromHidden = hidden.value?.trim() || '';
+                    if (fromHidden && sel.value !== fromHidden) {
+                        sel.value = fromHidden;
+                        if (sel.value !== fromHidden) {
+                            for (let i = 0; i < sel.options.length; i++) {
+                                if (sel.options[i].value === fromHidden) {
+                                    sel.selectedIndex = i;
+                                    break;
+                                }
+                            }
                         }
                     }
-                }
-            }
-        });
+                });
+            });
+        } finally {
+            syncingHiddens = false;
+        }
     };
 
     const readDim = id => {
@@ -296,8 +316,10 @@
             delete fieldCache[id];
         });
         if (product) {
-            product.selectedIndex = 0;
-            product.dispatchEvent(new Event('change', { bubbles: true }));
+            withFieldSyncSuppressed(() => {
+                product.selectedIndex = 0;
+                product.dispatchEvent(new Event('change', { bubbles: true }));
+            });
         }
         syncHiddens();
     };
@@ -365,22 +387,28 @@
     };
 
     const handleAdd = () => {
-        const now = Date.now();
-        if (now - tapLock < 350) return;
-        tapLock = now;
-        captureAllSelects();
-        syncHiddens();
-        updateButton();
-        if (addCurrent()) {
-            setHint('Item added to your inquiry list.', 'success');
-            setStatus('Item added to your inquiry list.', 'success');
-            $(IDS.list)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            return;
+        try {
+            const now = Date.now();
+            if (now - tapLock < 350) return;
+            tapLock = now;
+            captureAllSelects();
+            syncHiddens();
+            updateButton();
+            if (addCurrent()) {
+                setHint('Item added to your inquiry list.', 'success');
+                setStatus('Item added to your inquiry list.', 'success');
+                $(IDS.list)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                return;
+            }
+            const msg = missingMessage() || 'Enter width, height, product, and type before adding an item.';
+            setHint(msg, 'error');
+            setStatus(msg, 'error');
+            focusMissing();
+        } catch (err) {
+            console.error('Add item failed:', err);
+            setHint('Could not add item. Please refresh and try again.', 'error');
+            setStatus('Could not add item. Please refresh and try again.', 'error');
         }
-        const msg = missingMessage() || 'Enter width, height, product, and type before adding an item.';
-        setHint(msg, 'error');
-        setStatus(msg, 'error');
-        focusMissing();
     };
 
     const bindAddButton = () => {
@@ -406,11 +434,13 @@
         if (!form || form.dataset.qeBound === '1') return;
         form.dataset.qeBound = '1';
         const refresh = () => {
+            if (shouldIgnoreFieldEvent()) return;
             captureAllSelects();
             syncHiddens();
             requestAnimationFrame(updateButton);
         };
         const delayedRefresh = () => {
+            if (shouldIgnoreFieldEvent()) return;
             captureAllSelects();
             refresh();
             setTimeout(refresh, 0);
@@ -418,15 +448,23 @@
             setTimeout(refresh, 400);
         };
         form.addEventListener('input', e => {
+            if (shouldIgnoreFieldEvent()) return;
             if (e.target?.tagName === 'SELECT') cacheFromSelect(e.target);
             refresh();
         }, true);
         form.addEventListener('change', e => {
+            if (shouldIgnoreFieldEvent()) return;
             if (e.target?.tagName === 'SELECT') cacheFromSelect(e.target);
             delayedRefresh();
         }, true);
-        form.addEventListener('blur', delayedRefresh, true);
-        form.addEventListener('focusout', delayedRefresh, true);
+        form.addEventListener('blur', e => {
+            if (shouldIgnoreFieldEvent()) return;
+            delayedRefresh();
+        }, true);
+        form.addEventListener('focusout', e => {
+            if (shouldIgnoreFieldEvent()) return;
+            delayedRefresh();
+        }, true);
         document.addEventListener('qf-product-change', delayedRefresh);
         window.visualViewport?.addEventListener('resize', refresh);
         window.addEventListener('pageshow', () => {

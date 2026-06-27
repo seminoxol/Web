@@ -889,22 +889,32 @@
                         window.__quoteReadNativeSelect = readNativeSelectValue;
 
                         function syncAllHiddens() {
-                            [
-                                ['qf-product-native', 'qf-product'],
-                                ['qf-type-native', 'qf-type'],
-                                ['qf-glass-type-native', 'qf-glass-type'],
-                                ['qf-pane-native', 'qf-pane'],
-                                ['qf-thickness-native', 'qf-thickness']
-                            ].forEach(function (pair) {
-                                var sel = document.getElementById(pair[0]);
-                                var hid = document.getElementById(pair[1]);
-                                if (!sel || !hid) return;
-                                var val = readNativeSelectValue(sel);
-                                if (val) hid.value = val;
-                            });
-                            if (typeof window.__qfCaptureSelect === 'function') window.__qfCaptureSelect();
-                            if (typeof window.__qfUpdateAddBtn === 'function') window.__qfUpdateAddBtn();
-                            else scheduleFallbackAddBtnUpdate();
+                            if (window.__qfSuppressFieldSync) return;
+                            window.__qfSuppressFieldSync = (window.__qfSuppressFieldSync || 0) + 1;
+                            try {
+                                [
+                                    ['qf-product-native', 'qf-product'],
+                                    ['qf-type-native', 'qf-type'],
+                                    ['qf-glass-type-native', 'qf-glass-type'],
+                                    ['qf-pane-native', 'qf-pane'],
+                                    ['qf-thickness-native', 'qf-thickness']
+                                ].forEach(function (pair) {
+                                    var sel = document.getElementById(pair[0]);
+                                    var hid = document.getElementById(pair[1]);
+                                    if (!sel || !hid) return;
+                                    var val = readNativeSelectValue(sel);
+                                    if (val && hid.value !== val) hid.value = val;
+                                });
+                                if (typeof window.__qfCaptureSelect === 'function') window.__qfCaptureSelect();
+                            } finally {
+                                window.__qfSuppressFieldSync = Math.max(0, (window.__qfSuppressFieldSync || 1) - 1);
+                            }
+                            // Touch/mobile inquiry list owns button state — calling __qfUpdateAddBtn here loops with syncHiddens().
+                            if (!window.__quoteInquiryManaged && typeof window.__qfUpdateAddBtn === 'function') {
+                                window.__qfUpdateAddBtn();
+                            } else if (!window.__quoteInquiryManaged) {
+                                scheduleFallbackAddBtnUpdate();
+                            }
                         }
 
                         function scheduleFallbackAddBtnUpdate() {

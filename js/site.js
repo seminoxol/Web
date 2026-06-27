@@ -867,13 +867,24 @@ const initGalleryCarousel = () => {
     };
 
     const syncQuoteHiddenFields = () => {
-        NATIVE_HIDDEN_PAIRS.forEach(([selectId, hiddenId]) => {
-            const select = document.getElementById(selectId);
-            const hidden = document.getElementById(hiddenId);
-            if (!select || !hidden) return;
-            const fromNative = readNativeSelect(selectId);
-            if (fromNative) hidden.value = fromNative;
-        });
+        const suppress = () => {
+            window.__qfSuppressFieldSync = (window.__qfSuppressFieldSync || 0) + 1;
+        };
+        const release = () => {
+            window.__qfSuppressFieldSync = Math.max(0, (window.__qfSuppressFieldSync || 1) - 1);
+        };
+        suppress();
+        try {
+            NATIVE_HIDDEN_PAIRS.forEach(([selectId, hiddenId]) => {
+                const select = document.getElementById(selectId);
+                const hidden = document.getElementById(hiddenId);
+                if (!select || !hidden) return;
+                const fromNative = readNativeSelect(selectId);
+                if (fromNative && hidden.value !== fromNative) hidden.value = fromNative;
+            });
+        } finally {
+            release();
+        }
     };
 
     const readFieldValue = (nativeId, picker, hiddenId) => {
@@ -1329,9 +1340,16 @@ const initGalleryCarousel = () => {
         }
     };
 
+    let updatingAddItemBtn = false;
     const updateAddItemBtn = () => {
+        if (updatingAddItemBtn) return;
         if (window.__quoteInquiryManaged && window.__quoteInquiryApi?.updateButton) {
-            window.__quoteInquiryApi.updateButton();
+            updatingAddItemBtn = true;
+            try {
+                window.__quoteInquiryApi.updateButton();
+            } finally {
+                updatingAddItemBtn = false;
+            }
             return;
         }
         refreshAddItemBtn();
@@ -1498,7 +1516,7 @@ const initGalleryCarousel = () => {
         if (!(useNativePickers && productNative && productNative.options.length > 1)) {
             productPicker.renderOptions(PRODUCT_OPTIONS);
         }
-        if (productNative) {
+        if (productNative && !window.__quoteInquiryManaged) {
             const syncProduct = () => {
                 syncQuoteHiddenFields();
                 updateTypeFields(productNative.value);
@@ -1507,22 +1525,24 @@ const initGalleryCarousel = () => {
         }
     }
     const typeNative = document.getElementById('qf-type-native');
-    if (typeNative) {
+    if (typeNative && !window.__quoteInquiryManaged) {
         const syncType = () => {
             syncQuoteHiddenFields();
             scheduleAddBtnUpdate();
         };
         ['change', 'input', 'blur'].forEach(ev => typeNative.addEventListener(ev, syncType));
     }
-    ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
-        const sel = document.getElementById(id);
-        if (!sel) return;
-        ['change', 'input', 'blur'].forEach(ev => sel.addEventListener(ev, () => {
-            syncQuoteHiddenFields();
-            scheduleAddBtnUpdate();
-        }));
-    });
-    document.getElementById('quoteForm')?.addEventListener('focusin', scheduleAddBtnUpdate);
+    if (!window.__quoteInquiryManaged) {
+        ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            ['change', 'input', 'blur'].forEach(ev => sel.addEventListener(ev, () => {
+                syncQuoteHiddenFields();
+                scheduleAddBtnUpdate();
+            }));
+        });
+        document.getElementById('quoteForm')?.addEventListener('focusin', scheduleAddBtnUpdate);
+    }
     window.visualViewport?.addEventListener('resize', scheduleAddBtnUpdate);
     document.addEventListener('qf-product-change', e => {
         updateTypeFields(e.detail?.value ?? '');
@@ -1656,15 +1676,19 @@ const initGalleryCarousel = () => {
         syncInquiryExport();
     };
 
-    const resetInquiry = () => {
-        if (window.__quoteInquiryApi?.reset) {
-            window.__quoteInquiryApi.reset();
-            return;
-        }
+    const resetInquiryCore = () => {
         inquiryItems = [];
         clearEntryFields();
         renderInquiryList();
         syncInquiryExport();
+    };
+
+    const resetInquiry = () => {
+        if (window.__quoteInquiryManaged && window.__quoteInquiryApi?.reset) {
+            window.__quoteInquiryApi.reset();
+            return;
+        }
+        resetInquiryCore();
     };
 
     const sanitizeDimensionInput = el => {
@@ -1739,20 +1763,19 @@ const initGalleryCarousel = () => {
             handleAddItem();
         };
         window.__qfHandleAddItem = handleAddItem;
+        window.__qfUpdateAddBtn = updateAddItemBtn;
     }
-    window.__qfUpdateAddBtn = updateAddItemBtn;
 
     if (!window.__quoteInquiryManaged) {
         renderInquiryList();
         window.__quoteInquiryApi = {
             getItems: exportInquiryItems,
-            reset: resetInquiry,
+            reset: resetInquiryCore,
             tryAddCurrent: addCurrentItem,
             updateButton: refreshAddItemBtn,
             isManaged: false
         };
         syncInquiryExport();
-    } else {
         updateAddItemBtn();
     }
 
