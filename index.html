@@ -792,58 +792,6 @@
                         <button type="button" class="qf__add-item" id="qfAddItem" disabled>Add item</button>
                     </div>
 
-                    <script>
-                    (function () {
-                        var root = document.documentElement;
-                        var useMobilePickers = root.classList.contains('touch-ui')
-                            || root.classList.contains('mobile-ui')
-                            || matchMedia('(max-width: 768px)').matches;
-                        if (!useMobilePickers) return;
-
-                        function syncTypePanels(product) {
-                            var standard = document.getElementById('qfTypeStandard');
-                            var glass = document.getElementById('qfTypeGlass');
-                            var typeLabel = document.getElementById('qf-type-label');
-                            if (!standard || !glass) return;
-                            var isGlass = product === 'Glass';
-                            standard.hidden = isGlass;
-                            glass.hidden = !isGlass;
-                            if (typeLabel) typeLabel.hidden = isGlass;
-                        }
-
-                        function onProductNativeChange(sel) {
-                            var hidden = document.getElementById('qf-product');
-                            if (hidden) hidden.value = sel.value;
-                            syncTypePanels(sel.value);
-                            document.dispatchEvent(new CustomEvent('qf-product-change', {
-                                detail: { value: sel.value }
-                            }));
-                        }
-
-                        var map = [
-                            ['qf-product-native', 'qf-product'],
-                            ['qf-type-native', 'qf-type'],
-                            ['qf-glass-type-native', 'qf-glass-type'],
-                            ['qf-pane-native', 'qf-pane'],
-                            ['qf-thickness-native', 'qf-thickness']
-                        ];
-                        map.forEach(function (pair) {
-                            var sel = document.getElementById(pair[0]);
-                            var hidden = document.getElementById(pair[1]);
-                            if (!sel || !hidden) return;
-                            var onChange = function () {
-                                hidden.value = sel.value;
-                                if (pair[0] === 'qf-product-native') onProductNativeChange(sel);
-                            };
-                            sel.addEventListener('change', onChange);
-                            sel.addEventListener('input', onChange);
-                        });
-
-                        var productSel = document.getElementById('qf-product-native');
-                        if (productSel && productSel.value) syncTypePanels(productSel.value);
-                    })();
-                    </script>
-
                     <div class="qf__inquiry-wrap">
                         <span class="qf__inquiry-heading">Inquiry list</span>
                         <div class="qf__inquiry-list" id="qfInquiryList">

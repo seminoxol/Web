@@ -1848,15 +1848,17 @@ html.mobile-ui .qf-type-glass__grid .qf-picker__native,
     pointer-events: auto !important;
     opacity: 1 !important;
 }
-.qf-picker__native:focus {
-    background: var(--t-input-focus-bg);
-    box-shadow: inset 0 0 0 1px var(--t-input-focus-border), var(--t-input-focus-ring);
-    outline: none;
+html:not(.touch-ui):not(.mobile-ui) .qf-picker--disabled .qf-picker__native {
+    pointer-events: none;
 }
 .qf-picker--disabled .qf-picker__native {
     opacity: 0.55;
     cursor: not-allowed;
-    pointer-events: none;
+}
+.qf-picker__native:focus {
+    background: var(--t-input-focus-bg);
+    box-shadow: inset 0 0 0 1px var(--t-input-focus-border), var(--t-input-focus-ring);
+    outline: none;
 }
 .qf-picker__trigger {
     touch-action: manipulation;
@@ -3609,9 +3611,9 @@ html.is-revealed .faq-cta__card {
         cursor: not-allowed;
     }
 
-    .qf-type-panel--glass:not([hidden]) .qf-picker:not(.qf-picker--disabled) .qf-picker__native {
+    #qfTypeGlass:not([hidden]) .qf-picker__native {
         pointer-events: auto !important;
-        opacity: 1;
+        opacity: 1 !important;
     }
 
     .header--mobile-nav .nav:not(.nav--open) {

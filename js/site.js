@@ -792,7 +792,7 @@ const initSiteLoader = async () => {
         picker.classList.remove('is-open');
         const panel = picker.querySelector('.qf-picker__panel');
         if (panel) panel.hidden = true;
-        picker.querySelector('.qf-picker__trigger').setAttribute('aria-expanded', 'false');
+        picker.querySelector('.qf-picker__trigger')?.setAttribute('aria-expanded', 'false');
         if (openPicker === picker) openPicker = null;
         document.body.classList.toggle('quote-picker-open', Boolean(openPicker));
     };
@@ -913,8 +913,11 @@ const initSiteLoader = async () => {
             select.addEventListener('change', onNativeChange);
             select.addEventListener('input', onNativeChange);
 
+            trigger?.setAttribute('hidden', '');
+            panel?.setAttribute('hidden', '');
             trigger?.setAttribute('tabindex', '-1');
             trigger?.setAttribute('aria-hidden', 'true');
+            trigger?.setAttribute('disabled', '');
             const htmlPopulated = ['qf-product-native', 'qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'];
             if (select.options.length <= 1 && !htmlPopulated.includes(select.id)) reset();
             return { renderOptions, setDisabled, reset, getValue: () => hidden.value || select.value };
@@ -1091,24 +1094,27 @@ const initSiteLoader = async () => {
         onSelect: () => updateAddItemBtn()
     }) : null;
 
+    const activateNativeSelect = sel => {
+        sel.disabled = false;
+        sel.removeAttribute('disabled');
+        if (!useNativePickers) return;
+        const prevDisplay = sel.style.display;
+        sel.style.display = 'none';
+        void sel.offsetHeight;
+        sel.style.display = prevDisplay;
+    };
+
     const setGlassPickersEnabled = enabled => {
         ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
             const sel = document.getElementById(id);
             const picker = sel?.closest('.qf-picker');
             if (!sel) return;
-            if (useNativePickers) {
-                sel.disabled = false;
-                sel.removeAttribute('disabled');
-                picker?.classList.remove('qf-picker--disabled');
-                if (!enabled) sel.selectedIndex = 0;
-                return;
-            }
             if (enabled) {
-                sel.disabled = false;
-                sel.removeAttribute('disabled');
+                activateNativeSelect(sel);
                 picker?.classList.remove('qf-picker--disabled');
             } else {
                 sel.disabled = true;
+                sel.setAttribute('disabled', '');
                 sel.selectedIndex = 0;
                 picker?.classList.add('qf-picker--disabled');
             }
@@ -1118,7 +1124,10 @@ const initSiteLoader = async () => {
     const updateTypeFields = product => {
         const isGlass = product === 'Glass';
         if (qfTypeStandard) qfTypeStandard.hidden = isGlass;
-        if (qfTypeGlass) qfTypeGlass.hidden = !isGlass;
+        if (qfTypeGlass) {
+            qfTypeGlass.hidden = !isGlass;
+            if (isGlass) qfTypeGlass.removeAttribute('hidden');
+        }
         if (qfTypeLabel) qfTypeLabel.hidden = isGlass;
 
         if (!product) {
@@ -1147,6 +1156,7 @@ const initSiteLoader = async () => {
 
         if (isGlass) {
             typePicker?.setDisabled(true);
+            if (useNativePickers && qfTypeGlass) void qfTypeGlass.offsetHeight;
             setGlassPickersEnabled(true);
             glassTypePicker?.renderOptions(GLASS_TYPE_OPTIONS);
             panePicker?.renderOptions(PANE_OPTIONS);

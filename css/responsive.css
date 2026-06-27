@@ -480,9 +480,9 @@
         cursor: not-allowed;
     }
 
-    .qf-type-panel--glass:not([hidden]) .qf-picker:not(.qf-picker--disabled) .qf-picker__native {
+    #qfTypeGlass:not([hidden]) .qf-picker__native {
         pointer-events: auto !important;
-        opacity: 1;
+        opacity: 1 !important;
     }
 
     .header--mobile-nav .nav:not(.nav--open) {
