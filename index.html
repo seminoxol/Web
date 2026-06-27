@@ -978,12 +978,27 @@
                                 form.dataset.submitQueued = '1';
                                 var submitText = form.querySelector('.qf__submit-text');
                                 var status = document.getElementById('qfStatus');
-                                if (submitText) submitText.textContent = 'Loading…';
+                                if (submitText) submitText.textContent = 'Sending…';
                                 if (status) {
                                     status.hidden = false;
-                                    status.textContent = 'One moment — finishing setup…';
+                                    status.textContent = 'Sending your request…';
                                     status.className = 'qf__status qf__status--info';
                                 }
+                                setTimeout(function () {
+                                    if (form.dataset.submitQueued !== '1') return;
+                                    if (typeof window.__quoteSubmitHandler === 'function') {
+                                        delete form.dataset.submitQueued;
+                                        window.__quoteSubmitHandler(new Event('submit'));
+                                        return;
+                                    }
+                                    delete form.dataset.submitQueued;
+                                    if (submitText) submitText.textContent = 'Send Quote Request';
+                                    if (status) {
+                                        status.hidden = false;
+                                        status.textContent = 'Form is still loading. Please wait a moment and try again.';
+                                        status.className = 'qf__status qf__status--error';
+                                    }
+                                }, 8000);
                             }, true);
                         }
 
@@ -1084,6 +1099,7 @@
     <!-- @include footer -->
 
     <script src="/js/quote-entry.js?v={{ASSET_VERSION}}" defer></script>
+    <script src="/js/quote-submit.js?v={{ASSET_VERSION}}" defer></script>
     <script src="/js/site.js?v={{ASSET_VERSION}}" defer></script>
 
     <!-- @include loader-fallback -->

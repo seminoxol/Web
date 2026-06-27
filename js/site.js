@@ -1826,7 +1826,7 @@ const initGalleryCarousel = () => {
         });
     }
 
-    if (quoteForm && qfSubmit && qfSubmit.querySelector('.qf__submit-text')) {
+    if (!window.__quoteSubmitManaged && quoteForm && qfSubmit && qfSubmit.querySelector('.qf__submit-text')) {
         const qfSubmitText = qfSubmit.querySelector('.qf__submit-text');
         const SUBMIT_LABEL = 'Send Quote Request';
         const setSubmitLabel = (text, resetMs) => (qfSubmitText.textContent = text, resetMs && setTimeout(() => qfSubmitText.textContent = SUBMIT_LABEL, resetMs));
