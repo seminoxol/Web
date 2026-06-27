@@ -395,6 +395,7 @@ const initSiteLoader = async () => {
                 nav?.setAttribute('inert', '');
             }
             syncNavHitTarget(nav?.classList.contains('nav--open'));
+            syncHeaderPhone();
             return;
         }
 
@@ -413,6 +414,7 @@ const initSiteLoader = async () => {
             nav?.removeAttribute('inert');
             nav?.setAttribute('aria-hidden', 'false');
             syncNavHitTarget(false);
+            syncHeaderPhone();
             return;
         }
         if (!nav?.classList.contains('nav--open')) {
@@ -420,6 +422,21 @@ const initSiteLoader = async () => {
             nav?.setAttribute('inert', '');
         }
         syncNavHitTarget(nav?.classList.contains('nav--open'));
+        syncHeaderPhone();
+    };
+
+    const syncHeaderPhone = () => {
+        if (!header) return;
+        const brand = header.querySelector('.brand');
+        const actions = header.querySelector('.header__actions');
+        if (!brand || !actions || !isMobileNav()) {
+            header.classList.remove('header--hide-phone');
+            return;
+        }
+        const gap = actions.getBoundingClientRect().left - brand.getBoundingClientRect().right;
+        const wasHidden = header.classList.contains('header--hide-phone');
+        const hide = wasHidden ? gap < 12 : gap <= 1;
+        header.classList.toggle('header--hide-phone', hide);
     };
 
     syncNavMode();

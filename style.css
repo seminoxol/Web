@@ -3031,6 +3031,14 @@ html.is-revealed .faq-cta__card {
     flex-shrink: 0;
 }
 
+.header--mobile-nav.header--hide-phone .header__actions {
+    display: none;
+}
+
+.header--mobile-nav.header--hide-phone .theme-btn {
+    margin-left: auto;
+}
+
 .header--mobile-nav .nav {
     position: fixed;
     z-index: -1;
@@ -3160,6 +3168,14 @@ html.is-revealed .faq-cta__card {
     .header .theme-btn,
     .header .menu-btn {
         flex-shrink: 0;
+    }
+
+    .header.header--hide-phone .header__actions {
+        display: none;
+    }
+
+    .header.header--hide-phone .theme-btn {
+        margin-left: auto;
     }
 
     .header .nav {
