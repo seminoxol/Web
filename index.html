@@ -669,20 +669,22 @@
                             <div class="qf__field qf__field--type">
                                 <label id="qf-type-label" for="qf-type-native">Type</label>
                                 <div class="qf-type-panel qf-type-panel--standard" id="qfTypeStandard">
+                                    <template id="qfTypeOptionsTpl">
+                                        <option value="Awning" data-product="Window">Awning — 上悬窗</option>
+                                        <option value="Casement" data-product="Window">Casement — 平开窗</option>
+                                        <option value="Sliding" data-product="Window">Sliding — 推拉窗</option>
+                                        <option value="Double Sliding" data-product="Window">Double Sliding — 双推拉窗</option>
+                                        <option value="Single Hung" data-product="Window">Single Hung — 单悬窗</option>
+                                        <option value="Double Hung" data-product="Window">Double Hung — 双悬窗</option>
+                                        <option value="Fixed" data-product="Window">Fixed — 固定窗</option>
+                                        <option value="Entrance Door" data-product="Doors">Entrance Door — 入户门</option>
+                                        <option value="Patio Door" data-product="Doors">Patio Door — 庭院门</option>
+                                        <option value="Side Door" data-product="Doors">Side Door — 侧门</option>
+                                    </template>
                                     <div class="qf-picker qf-picker--disabled" id="qfTypePicker">
                                         <input type="hidden" id="qf-type" value="">
                                         <select class="qf-picker__native" id="qf-type-native" aria-labelledby="qf-type-label" disabled>
                                             <option value="">Select product first</option>
-                                            <option value="Awning" data-product="Window" hidden disabled>Awning — 上悬窗</option>
-                                            <option value="Casement" data-product="Window" hidden disabled>Casement — 平开窗</option>
-                                            <option value="Sliding" data-product="Window" hidden disabled>Sliding — 推拉窗</option>
-                                            <option value="Double Sliding" data-product="Window" hidden disabled>Double Sliding — 双推拉窗</option>
-                                            <option value="Single Hung" data-product="Window" hidden disabled>Single Hung — 单悬窗</option>
-                                            <option value="Double Hung" data-product="Window" hidden disabled>Double Hung — 双悬窗</option>
-                                            <option value="Fixed" data-product="Window" hidden disabled>Fixed — 固定窗</option>
-                                            <option value="Entrance Door" data-product="Doors" hidden disabled>Entrance Door — 入户门</option>
-                                            <option value="Patio Door" data-product="Doors" hidden disabled>Patio Door — 庭院门</option>
-                                            <option value="Side Door" data-product="Doors" hidden disabled>Side Door — 侧门</option>
                                         </select>
                                         <button type="button" class="qf-picker__trigger" aria-labelledby="qf-type-label" aria-haspopup="listbox" aria-expanded="false" disabled>
                                             <span class="qf-picker__value qf-picker__value--placeholder">Select product first</span>
@@ -804,27 +806,37 @@
 
                     <script>
                     (function () {
+                        function getTypeCatalog() {
+                            var tpl = document.getElementById('qfTypeOptionsTpl');
+                            if (!tpl) return [];
+                            return Array.prototype.slice.call(tpl.content.querySelectorAll('option')).map(function (opt) {
+                                return {
+                                    value: opt.value,
+                                    text: opt.textContent,
+                                    product: opt.getAttribute('data-product')
+                                };
+                            });
+                        }
+
                         function syncTypeSelect(product) {
                             var typeSel = document.getElementById('qf-type-native');
                             var typeHidden = document.getElementById('qf-type');
                             var picker = typeSel ? typeSel.closest('.qf-picker') : null;
                             if (!typeSel) return;
                             var isStd = product === 'Window' || product === 'Doors';
-                            typeSel.querySelectorAll('option').forEach(function (opt) {
-                                var p = opt.getAttribute('data-product');
-                                if (!p) {
-                                    opt.textContent = product ? 'Select type' : 'Select product first';
-                                    opt.disabled = false;
-                                    opt.hidden = false;
-                                    return;
-                                }
-                                var show = p === product;
-                                opt.hidden = !show;
-                                opt.disabled = !show;
-                            });
-                            typeSel.selectedIndex = 0;
-                            if (typeHidden) typeHidden.value = '';
+                            var catalog = getTypeCatalog();
+                            typeSel.replaceChildren();
+                            var placeholder = document.createElement('option');
+                            placeholder.value = '';
+                            placeholder.textContent = product ? 'Select type' : 'Select product first';
+                            typeSel.appendChild(placeholder);
                             if (isStd) {
+                                catalog.filter(function (opt) { return opt.product === product; }).forEach(function (opt) {
+                                    var node = document.createElement('option');
+                                    node.value = opt.value;
+                                    node.textContent = opt.text;
+                                    typeSel.appendChild(node);
+                                });
                                 typeSel.disabled = false;
                                 typeSel.removeAttribute('disabled');
                                 if (picker) picker.classList.remove('qf-picker--disabled');
@@ -833,6 +845,7 @@
                                 typeSel.setAttribute('disabled', '');
                                 if (picker) picker.classList.add('qf-picker--disabled');
                             }
+                            if (typeHidden) typeHidden.value = '';
                         }
 
                         function syncQuotePanels() {

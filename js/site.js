@@ -855,7 +855,6 @@ const initSiteLoader = async () => {
             const renderOptions = options => {
                 const htmlPopulated = new Set([
                     'qf-product-native',
-                    'qf-type-native',
                     'qf-glass-type-native',
                     'qf-pane-native',
                     'qf-thickness-native'
@@ -920,7 +919,7 @@ const initSiteLoader = async () => {
             trigger?.setAttribute('tabindex', '-1');
             trigger?.setAttribute('aria-hidden', 'true');
             trigger?.setAttribute('disabled', '');
-            const htmlPopulated = ['qf-product-native', 'qf-type-native', 'qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'];
+            const htmlPopulated = ['qf-product-native', 'qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'];
             if (select.options.length <= 1 && !htmlPopulated.includes(select.id)) reset();
             return { renderOptions, setDisabled, reset, getValue: () => hidden.value || select.value };
         }
@@ -1146,27 +1145,35 @@ const initSiteLoader = async () => {
         });
     };
 
+    const getTypeOptionCatalog = () => {
+        const tpl = document.getElementById('qfTypeOptionsTpl');
+        if (!tpl) return [];
+        return [...tpl.content.querySelectorAll('option')].map(opt => ({
+            value: opt.value,
+            text: opt.textContent,
+            product: opt.dataset.product
+        }));
+    };
+
     const syncTypeNativeSelect = product => {
         const sel = document.getElementById('qf-type-native');
         const hidden = document.getElementById('qf-type');
         const picker = sel?.closest('.qf-picker');
         if (!sel) return;
         const isStd = product === 'Window' || product === 'Doors';
-        sel.querySelectorAll('option').forEach(opt => {
-            const p = opt.dataset.product;
-            if (!p) {
-                opt.textContent = product ? 'Select type' : 'Select product first';
-                opt.disabled = false;
-                opt.hidden = false;
-                return;
-            }
-            const show = p === product;
-            opt.hidden = !show;
-            opt.disabled = !show;
-        });
-        sel.selectedIndex = 0;
-        if (hidden) hidden.value = '';
+        const catalog = getTypeOptionCatalog();
+        sel.replaceChildren();
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = product ? 'Select type' : 'Select product first';
+        sel.appendChild(placeholder);
         if (isStd) {
+            catalog.filter(opt => opt.product === product).forEach(opt => {
+                const node = document.createElement('option');
+                node.value = opt.value;
+                node.textContent = opt.text;
+                sel.appendChild(node);
+            });
             activateNativeSelect(sel);
             picker?.classList.remove('qf-picker--disabled');
         } else {
@@ -1174,6 +1181,7 @@ const initSiteLoader = async () => {
             sel.setAttribute('disabled', '');
             picker?.classList.add('qf-picker--disabled');
         }
+        if (hidden) hidden.value = '';
     };
 
     const updateTypeFields = product => {
