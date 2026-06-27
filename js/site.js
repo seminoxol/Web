@@ -593,9 +593,11 @@ const initSiteLoader = async () => {
         const cells = track ? [...track.querySelectorAll('.gallery__cell')] : [];
         if (track && prevBtn && nextBtn && cells.length) {
         const GAP = 12;
-        let page = 0, resizeTimer, isGalleryAnimating = false;
-        let touchStartX = 0;
+        let page = 0;
+        let resizeTimer;
+        let scrollSyncTimer;
         const viewport = galleryCarousel.querySelector('.gallery__viewport');
+        viewport?.classList.add('gallery__viewport--scroll');
 
         const perPage = () => innerWidth < 600 ? 1 : innerWidth < 1024 ? 2 : 3;
         const totalPages = () => Math.ceil(cells.length / perPage());
@@ -605,24 +607,80 @@ const initSiteLoader = async () => {
             if (img) loadImage(img);
         };
 
-        const finishGalleryAnim = () => {
-            isGalleryAnimating = false;
-            prevBtn.disabled = page === 0;
-            nextBtn.disabled = page >= totalPages() - 1;
+        const layoutCells = () => {
+            const vw = viewport?.clientWidth ?? 0;
+            if (vw < 48) return false;
+            const per = perPage();
+            const cellW = Math.max(0, (vw - GAP * (per - 1)) / per);
+            const maxCellH = Math.min(Math.round(window.innerWidth * 0.55), 300);
+            cells.forEach(cell => {
+                cell.style.width = `${cellW}px`;
+                cell.style.flexBasis = `${cellW}px`;
+                cell.style.maxHeight = `${maxCellH}px`;
+                if (isTouchUI()) cell.style.removeProperty('height');
+            });
+            return true;
         };
 
-        const wireStaticDots = () => {
-            if (!dotsContainer) return;
-            dotsContainer.querySelectorAll('.gallery__dot').forEach((dot, i) => {
-                dot.replaceWith(dot.cloneNode(true));
+        const pageScrollLeft = targetPage => {
+            const startIdx = targetPage * perPage();
+            return cells[startIdx]?.offsetLeft ?? 0;
+        };
+
+        const updateUi = () => {
+            const per = perPage();
+            const maxPage = totalPages() - 1;
+            page = Math.min(page, maxPage);
+            prevBtn.disabled = page <= 0;
+            nextBtn.disabled = page >= maxPage;
+            if (status) {
+                status.textContent = `Showing ${page * per + 1}–${Math.min((page + 1) * per, cells.length)} of ${cells.length}`;
+            }
+            dotsContainer?.querySelectorAll('.gallery__dot').forEach((dot, i) => {
+                dot.classList.toggle('gallery__dot--active', i === page);
             });
-            dotsContainer.querySelectorAll('.gallery__dot').forEach((dot, i) => {
-                bindTap(dot, e => {
-                    e?.preventDefault?.();
-                    initGallery();
-                    goToPage(i);
-                });
+            const startIdx = page * per;
+            cells.forEach((cell, i) => {
+                if (i >= startIdx && i < startIdx + per) loadGalleryCellImage(cell);
             });
+        };
+
+        const syncPageFromScroll = () => {
+            if (!viewport) return;
+            const per = perPage();
+            const left = viewport.scrollLeft;
+            let nearest = 0;
+            let nearestDist = Infinity;
+            for (let p = 0; p < totalPages(); p++) {
+                const idx = p * per;
+                const dist = Math.abs((cells[idx]?.offsetLeft ?? 0) - left);
+                if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearest = p;
+                }
+            }
+            if (nearest !== page) {
+                page = nearest;
+                updateUi();
+            }
+        };
+
+        const scrollToPage = (targetPage, instant = false) => {
+            const maxPage = totalPages() - 1;
+            const target = Math.max(0, Math.min(targetPage, maxPage));
+            page = target;
+            if (!layoutCells()) {
+                requestAnimationFrame(() => scrollToPage(target, instant));
+                return;
+            }
+            const left = pageScrollLeft(page);
+            updateUi();
+            if (!viewport) return;
+            try {
+                viewport.scrollTo({ left, behavior: instant || isTouchUI() ? 'auto' : 'smooth' });
+            } catch {
+                viewport.scrollLeft = left;
+            }
         };
 
         const buildDots = () => {
@@ -632,152 +690,65 @@ const initSiteLoader = async () => {
                 dot.type = 'button';
                 dot.className = `gallery__dot${i === page ? ' gallery__dot--active' : ''}`;
                 dot.setAttribute('aria-label', `Go to page ${i + 1}`);
-                bindTap(dot, e => {
+                const jump = e => {
                     e?.preventDefault?.();
-                    goToPage(i);
-                });
+                    scrollToPage(i, true);
+                };
+                bindTap(dot, jump);
+                dot.setAttribute('onclick', `window.__galleryGo&&window.__galleryGo(${i},event)`);
                 return dot;
             }));
         };
 
-        const getTrackOffset = startIdx => {
-            if (startIdx <= 0) return 0;
-            const cell = cells[startIdx];
-            if (!cell) return 0;
-            return cell.offsetLeft;
-        };
-
-        const setTrackOffset = (offset, instant = false) => {
-            if (instant || isTouchUI()) {
-                galleryCarousel.classList.add('is-resizing');
-            }
-            track.style.transform = `translate3d(-${offset}px, 0, 0)`;
-            if (instant || isTouchUI()) {
-                void track.offsetHeight;
-                requestAnimationFrame(() => galleryCarousel.classList.remove('is-resizing'));
-            }
-        };
-
-        const updateGallery = (instant = false) => {
-            if (instant) galleryCarousel.classList.add('is-resizing');
-            const rawVw = viewport?.getBoundingClientRect().width ?? viewport?.clientWidth ?? 0;
-            const vw = Math.max(0, Math.min(rawVw, galleryCarousel.getBoundingClientRect().width, window.innerWidth));
-            if (vw < 48) {
-                if (instant) galleryCarousel.classList.remove('is-resizing');
-                requestAnimationFrame(() => updateGallery(instant));
-                return false;
-            }
-
-            const per = perPage(), maxPage = totalPages() - 1;
-            page = Math.min(page, maxPage);
-            const startIdx = page * per;
-            const visibleCount = Math.min(per, cells.length - startIdx);
-            const isPartial = visibleCount < per;
-            const standardW = Math.max(0, (vw - GAP * (per - 1)) / per);
-            const activeW = isPartial ? Math.max(0, (vw - GAP * (visibleCount - 1)) / visibleCount) : standardW;
-            const maxCellH = Math.min(Math.round(window.innerWidth * 0.55), 300);
-            const touchGallery = isTouchUI();
-            cells.forEach((cell, i) => {
-                const onPage = i >= startIdx && i < startIdx + visibleCount;
-                const w = isPartial && onPage ? activeW : standardW;
-                const h = Math.min(Math.round(w * 2 / 3), maxCellH);
-                cell.style.width = `${w}px`;
-                if (touchGallery) {
-                    cell.style.removeProperty('height');
-                } else {
-                    cell.style.height = `${h}px`;
-                }
-                cell.style.maxHeight = `${maxCellH}px`;
-                if (onPage) loadGalleryCellImage(cell);
+        const wireStaticDots = () => {
+            if (!dotsContainer) return;
+            dotsContainer.querySelectorAll('.gallery__dot').forEach((dot, i) => {
+                const jump = e => {
+                    e?.preventDefault?.();
+                    scrollToPage(i, true);
+                };
+                bindTap(dot, jump);
+                dot.setAttribute('onclick', `window.__galleryGo&&window.__galleryGo(${i},event)`);
             });
-            const offset = getTrackOffset(startIdx);
-            setTrackOffset(offset, instant || touchGallery);
-            const atStart = page === 0;
-            const atEnd = page >= maxPage;
-            prevBtn.disabled = atStart;
-            nextBtn.disabled = atEnd;
-            if (status) {
-                status.textContent = `Showing ${page * per + 1}–${Math.min((page + 1) * per, cells.length)} of ${cells.length}`;
-            }
-            dotsContainer?.querySelectorAll('.gallery__dot').forEach((dot, i) => {
-                dot.classList.toggle('gallery__dot--active', i === page);
-            });
-            if (instant) requestAnimationFrame(() => galleryCarousel.classList.remove('is-resizing'));
-            return true;
         };
-
-        const goToPage = nextPage => {
-            const maxPage = totalPages() - 1;
-            const target = Math.max(0, Math.min(nextPage, maxPage));
-            if (target === page) return;
-            if (!isTouchUI() && isGalleryAnimating) return;
-            page = target;
-            if (isTouchUI()) {
-                updateGallery(true);
-                return;
-            }
-            isGalleryAnimating = true;
-            updateGallery(false);
-            clearTimeout(goToPage._animTimer);
-            goToPage._animTimer = setTimeout(finishGalleryAnim, 650);
-        };
-
-        track.addEventListener('transitionend', e => {
-            if (e.target !== track || e.propertyName !== 'transform') return;
-            clearTimeout(goToPage._animTimer);
-            finishGalleryAnim();
-        });
-        track.addEventListener('webkitTransitionEnd', e => {
-            if (e.target !== track || e.propertyName !== 'transform') return;
-            clearTimeout(goToPage._animTimer);
-            finishGalleryAnim();
-        });
-
-        let galleryReady = false;
-        const initGallery = () => {
-            if (galleryReady) return;
-            galleryReady = true;
-            buildDots();
-            updateGallery(true);
-        };
-
-        wireStaticDots();
-        document.getElementById('galleryFooter')?.classList.add('gallery__footer--ready');
 
         const onPrev = e => {
             e?.preventDefault?.();
-            initGallery();
+            e?.stopPropagation?.();
             if (page <= 0) return;
-            goToPage(page - 1);
+            scrollToPage(page - 1, isTouchUI());
         };
         const onNext = e => {
             e?.preventDefault?.();
-            initGallery();
+            e?.stopPropagation?.();
             if (page >= totalPages() - 1) return;
-            goToPage(page + 1);
+            scrollToPage(page + 1, isTouchUI());
         };
+
         bindTap(prevBtn, onPrev);
         bindTap(nextBtn, onNext);
 
-        if (viewport && isTouchUI()) {
-            viewport.addEventListener('touchstart', e => {
-                touchStartX = e.changedTouches[0]?.clientX ?? 0;
-            }, { passive: true });
-            viewport.addEventListener('touchend', e => {
-                const endX = e.changedTouches[0]?.clientX ?? 0;
-                const dx = endX - touchStartX;
-                if (Math.abs(dx) < 48) return;
-                initGallery();
-                if (dx < 0) onNext();
-                else onPrev();
-            }, { passive: true });
-        }
+        viewport?.addEventListener('scroll', () => {
+            clearTimeout(scrollSyncTimer);
+            scrollSyncTimer = setTimeout(syncPageFromScroll, 100);
+        }, { passive: true });
 
-        window.addEventListener('resize', () => (clearTimeout(resizeTimer), resizeTimer = setTimeout(() => {
-            buildDots();
-            updateGallery(true);
-        }, 150)), { passive: true });
-        initGallery();
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                buildDots();
+                scrollToPage(page, true);
+            }, 150);
+        }, { passive: true });
+
+        wireStaticDots();
+        document.getElementById('galleryFooter')?.classList.add('gallery__footer--ready');
+        buildDots();
+        scrollToPage(0, true);
+
+        window.__galleryPrev = onPrev;
+        window.__galleryNext = onNext;
+        window.__galleryGo = p => scrollToPage(Number(p), true);
         }
     }
     } catch (galleryErr) {

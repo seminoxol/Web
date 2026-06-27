@@ -1017,6 +1017,18 @@ details.product-item[open] > .product-panel .product-panel__inner {
     position: relative;
     z-index: 1;
 }
+.gallery__viewport--scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+}
+.gallery__viewport--scroll::-webkit-scrollbar {
+    display: none;
+}
 
 .gallery__track {
     display: flex;
@@ -1024,6 +1036,11 @@ details.product-item[open] > .product-panel .product-panel__inner {
     align-items: flex-start;
     transition: transform 0.55s var(--ease);
     backface-visibility: hidden;
+}
+.gallery__viewport--scroll .gallery__track {
+    transform: none !important;
+    transition: none !important;
+    width: max-content;
 }
 
 .gallery__carousel.is-resizing .gallery__track,
@@ -1043,6 +1060,12 @@ details.product-item[open] > .product-panel .product-panel__inner {
     max-height: 300px;
     transition: width 0.55s var(--ease);
     backface-visibility: hidden;
+}
+.gallery__viewport--scroll .gallery__cell {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    transition: none !important;
+    flex-shrink: 0;
 }
 
 .gallery__cell img {
