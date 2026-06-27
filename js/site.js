@@ -1344,6 +1344,10 @@ const initGalleryCarousel = () => {
     };
 
     const setGlassPickersEnabled = enabled => {
+        const glassPanel = document.getElementById('qfTypeGlass');
+        const glassPanelOpen = glassPanel && !glassPanel.hidden && !glassPanel.hasAttribute('hidden');
+        if (window.__quoteInquiryManaged && glassPanelOpen && !enabled) return;
+
         ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
             const sel = document.getElementById(id);
             const picker = sel?.closest('.qf-picker');

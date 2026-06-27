@@ -43,12 +43,33 @@
     let items = [];
     let tapLock = 0;
     let refreshTimer = 0;
+    const fieldCache = Object.create(null);
 
     // Mobile/touch only — desktop uses custom pickers via site.js (hidden inputs).
     if (!$('quoteForm') || !$(IDS.addBtn) || !isTouchUI()) return;
 
+    const cacheFromSelect = (el, key) => {
+        if (!el) return;
+        const id = key || el.id;
+        if (!id) return;
+        const val = readSelectRaw(el);
+        if (val) fieldCache[id] = val;
+    };
+
+    const captureAllSelects = () => {
+        [IDS.product, IDS.type, IDS.glassType, IDS.pane, IDS.thickness].forEach(id => {
+            cacheFromSelect($(id));
+        });
+    };
+
+    window.__qfCaptureSelect = captureAllSelects;
+
     const readSelectRaw = el => {
         if (!el) return '';
+        if (typeof window.__quoteReadNativeSelect === 'function') {
+            const shared = window.__quoteReadNativeSelect(el);
+            if (shared) return shared;
+        }
 
         const direct = (el.value || '').trim();
         if (direct) return direct;
@@ -64,7 +85,6 @@
 
         const selected = el.selectedOptions?.[0];
         if (selected?.value?.trim()) return selected.value.trim();
-        if (selected?.index > 0 && selected.value?.trim()) return selected.value.trim();
 
         const label = (selected?.textContent || el.options[idx]?.textContent || '').trim();
         if (label) {
@@ -83,6 +103,8 @@
     };
 
     const readSelect = id => {
+        if (fieldCache[id]) return fieldCache[id];
+
         const el = $(id);
         if (!el) return '';
         if (el.disabled && id === IDS.type && isGlassMode()) return 'n/a';
@@ -90,8 +112,14 @@
         const hiddenId = HIDDEN_PAIRS.find(([selectId]) => selectId === id)?.[1];
         const fromHidden = hiddenId && $(hiddenId)?.value?.trim();
         const fromSelect = readSelectRaw(el);
-        if (fromSelect) return fromSelect;
-        if (fromHidden) return fromHidden;
+        if (fromSelect) {
+            fieldCache[id] = fromSelect;
+            return fromSelect;
+        }
+        if (fromHidden) {
+            fieldCache[id] = fromHidden;
+            return fromHidden;
+        }
         return '';
     };
 
@@ -168,6 +196,7 @@
     };
 
     const getMissing = () => {
+        captureAllSelects();
         syncHiddens();
         const missing = [];
         if (!validDim(readDim(IDS.width))) missing.push('width');
@@ -260,6 +289,9 @@
         if (w) w.value = '';
         if (h) h.value = '';
         if (q) q.value = '1';
+        [IDS.product, IDS.type, IDS.glassType, IDS.pane, IDS.thickness].forEach(id => {
+            delete fieldCache[id];
+        });
         if (product) {
             product.selectedIndex = 0;
             product.dispatchEvent(new Event('change', { bubbles: true }));
@@ -298,6 +330,7 @@
     };
 
     const addCurrent = () => {
+        captureAllSelects();
         syncHiddens();
         if (!isComplete()) return false;
         const product = getProduct();
@@ -332,6 +365,7 @@
         const now = Date.now();
         if (now - tapLock < 350) return;
         tapLock = now;
+        captureAllSelects();
         syncHiddens();
         updateButton();
         if (addCurrent()) {
@@ -369,17 +403,25 @@
         if (!form || form.dataset.qeBound === '1') return;
         form.dataset.qeBound = '1';
         const refresh = () => {
+            captureAllSelects();
             syncHiddens();
             requestAnimationFrame(updateButton);
         };
         const delayedRefresh = () => {
+            captureAllSelects();
             refresh();
             setTimeout(refresh, 0);
             setTimeout(refresh, 120);
             setTimeout(refresh, 400);
         };
-        form.addEventListener('input', refresh, true);
-        form.addEventListener('change', delayedRefresh, true);
+        form.addEventListener('input', e => {
+            if (e.target?.tagName === 'SELECT') cacheFromSelect(e.target);
+            refresh();
+        }, true);
+        form.addEventListener('change', e => {
+            if (e.target?.tagName === 'SELECT') cacheFromSelect(e.target);
+            delayedRefresh();
+        }, true);
         form.addEventListener('blur', delayedRefresh, true);
         form.addEventListener('focusout', delayedRefresh, true);
         document.addEventListener('qf-product-change', delayedRefresh);

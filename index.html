@@ -861,6 +861,33 @@
                             if (typeHidden) typeHidden.value = '';
                         }
 
+                        function readNativeSelectValue(sel) {
+                            if (!sel) return '';
+                            var direct = (sel.value || '').trim();
+                            if (direct) return direct;
+                            var i, opt, idx = sel.selectedIndex;
+                            if (idx > 0 && sel.options[idx] && sel.options[idx].value) {
+                                return sel.options[idx].value.trim();
+                            }
+                            for (i = 0; i < sel.options.length; i++) {
+                                opt = sel.options[i];
+                                if (opt.selected && opt.value) return opt.value.trim();
+                            }
+                            var label = (sel.options[idx] && sel.options[idx].textContent || '').trim();
+                            if (label) {
+                                for (i = 0; i < sel.options.length; i++) {
+                                    opt = sel.options[i];
+                                    if (opt.value && opt.textContent.trim() === label) return opt.value.trim();
+                                }
+                                var token = label.split('\u2014')[0].split('\u2013')[0].trim();
+                                for (i = 0; i < sel.options.length; i++) {
+                                    if (sel.options[i].value === token) return token;
+                                }
+                            }
+                            return '';
+                        }
+                        window.__quoteReadNativeSelect = readNativeSelectValue;
+
                         function syncAllHiddens() {
                             [
                                 ['qf-product-native', 'qf-product'],
@@ -871,8 +898,11 @@
                             ].forEach(function (pair) {
                                 var sel = document.getElementById(pair[0]);
                                 var hid = document.getElementById(pair[1]);
-                                if (sel && hid) hid.value = sel.value;
+                                if (!sel || !hid) return;
+                                var val = readNativeSelectValue(sel);
+                                if (val) hid.value = val;
                             });
+                            if (typeof window.__qfCaptureSelect === 'function') window.__qfCaptureSelect();
                             if (typeof window.__qfUpdateAddBtn === 'function') window.__qfUpdateAddBtn();
                             else scheduleFallbackAddBtnUpdate();
                         }
@@ -888,7 +918,7 @@
                         function syncQuotePanels() {
                             var sel = document.getElementById('qf-product-native');
                             if (!sel) return;
-                            var product = sel.value;
+                            var product = readNativeSelectValue(sel) || sel.value;
                             var isGlass = product === 'Glass';
                             var standard = document.getElementById('qfTypeStandard');
                             var glass = document.getElementById('qfTypeGlass');
