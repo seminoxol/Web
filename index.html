@@ -812,8 +812,9 @@
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="qf__add-item qf__add-item--inactive" id="qfAddItem" aria-disabled="true" onclick="window.__qfAddItem&&window.__qfAddItem(event)">Add item</button>
+                        <button type="button" class="qf__add-item qf__add-item--inactive" id="qfAddItem" aria-disabled="true" onclick="window.__qfHandleAddItem?window.__qfHandleAddItem(event):(window.__qfAddItem&&window.__qfAddItem(event))">Add item</button>
                         <p class="qf__field-hint qf__field-hint--entry" id="qf-add-item-hint">Enter width and height to add an item.</p>
+                        <p class="qf__status" id="qfStatus" role="status" aria-live="polite" hidden></p>
                     </div>
 
                     <script>
@@ -908,6 +909,19 @@
                             }));
                         }
 
+                        function wireAddItemButton() {
+                            var btn = document.getElementById('qfAddItem');
+                            if (!btn || btn.dataset.qfTapReady === '1') return;
+                            btn.dataset.qfTapReady = '1';
+                            var run = function (e) {
+                                e.preventDefault();
+                                if (typeof window.__qfHandleAddItem === 'function') window.__qfHandleAddItem(e);
+                                else if (typeof window.__qfAddItem === 'function') window.__qfAddItem(e);
+                            };
+                            btn.addEventListener('click', run);
+                            btn.addEventListener('touchend', run, { passive: false });
+                        }
+
                         function wire() {
                             var productSel = document.getElementById('qf-product-native');
                             var typeSel = document.getElementById('qf-type-native');
@@ -932,6 +946,7 @@
                                 });
                             });
                             syncQuotePanels();
+                            wireAddItemButton();
                         }
                         if (document.readyState === 'loading') {
                             document.addEventListener('DOMContentLoaded', wire);
@@ -947,8 +962,6 @@
                             <p class="qf__inquiry-empty" id="qfInquiryEmpty">Add products above, then click <strong>Add item</strong>.</p>
                         </div>
                     </div>
-
-                    <p class="qf__status" id="qfStatus" role="status" aria-live="polite" hidden></p>
 
                     <div class="qf__field">
                         <label for="qf-message">Additional Notes</label>

@@ -833,7 +833,19 @@ const initGalleryCarousel = () => {
         ['qf-thickness-native', 'qf-thickness']
     ];
 
-    const readNativeSelect = id => document.getElementById(id)?.value?.trim() ?? '';
+    const readNativeSelect = id => {
+        const sel = document.getElementById(id);
+        if (!sel || sel.disabled) return '';
+        const direct = sel.value?.trim() ?? '';
+        if (direct) return direct;
+        const opt = sel.selectedOptions?.[0] ?? sel.options?.[sel.selectedIndex];
+        return opt?.value?.trim() ?? '';
+    };
+
+    const readDimValue = el => {
+        if (!el) return '';
+        return String(el.value ?? '').trim();
+    };
 
     const syncQuoteHiddenFields = () => {
         NATIVE_HIDDEN_PAIRS.forEach(([selectId, hiddenId]) => {
@@ -845,14 +857,21 @@ const initGalleryCarousel = () => {
 
     const bindQuoteBtn = (el, handler) => {
         if (!el) return;
+        let touchAt = 0;
         const run = e => {
-            e.preventDefault();
-            e.stopPropagation();
+            if (e?.type === 'touchend') {
+                touchAt = Date.now();
+            } else if (e?.type === 'click' && Date.now() - touchAt < 500) {
+                return;
+            }
+            e?.preventDefault?.();
+            e?.stopPropagation?.();
             syncQuoteHiddenFields();
             handler(e);
         };
         el.addEventListener('click', run);
         el.addEventListener('touchend', run, { passive: false });
+        el.addEventListener('pointerup', run);
     };
 
     const closePicker = picker => {
@@ -965,6 +984,17 @@ const initGalleryCarousel = () => {
             const reset = (placeholderText = placeholder) => {
                 currentPlaceholder = placeholderText;
                 hidden.value = '';
+                const htmlPopulated = new Set([
+                    'qf-product-native',
+                    'qf-glass-type-native',
+                    'qf-pane-native',
+                    'qf-thickness-native'
+                ]);
+                if (htmlPopulated.has(select.id) && select.options.length > 1) {
+                    select.selectedIndex = 0;
+                    syncPlaceholder();
+                    return;
+                }
                 clearSelect();
                 const placeholderOpt = document.createElement('option');
                 placeholderOpt.value = '';
@@ -1179,7 +1209,7 @@ const initGalleryCarousel = () => {
 
     const isEntryComplete = () => {
         syncQuoteHiddenFields();
-        if (!isValidDim(qfWidth?.value) || !isValidDim(qfHeight?.value)) return false;
+        if (!isValidDim(readDimValue(qfWidth)) || !isValidDim(readDimValue(qfHeight))) return false;
         const product = getProductValue();
         if (!product) return false;
         if (product === 'Glass') {
@@ -1195,8 +1225,8 @@ const initGalleryCarousel = () => {
     const getMissingEntryFields = () => {
         syncQuoteHiddenFields();
         const missing = [];
-        if (!isValidDim(qfWidth?.value)) missing.push('width');
-        if (!isValidDim(qfHeight?.value)) missing.push('height');
+        if (!isValidDim(readDimValue(qfWidth))) missing.push('width');
+        if (!isValidDim(readDimValue(qfHeight))) missing.push('height');
         const product = getProductValue();
         if (!product) missing.push('product');
         else if (product === 'Glass') {
@@ -1242,10 +1272,12 @@ const initGalleryCarousel = () => {
             qfAddItem.removeAttribute('disabled');
             qfAddItem.setAttribute('aria-disabled', canAdd ? 'false' : 'true');
             qfAddItem.classList.toggle('qf__add-item--inactive', !canAdd);
+            qfAddItem.classList.toggle('qf__add-item--ready', canAdd);
         } else {
             qfAddItem.disabled = !canAdd;
             qfAddItem.setAttribute('aria-disabled', canAdd ? 'false' : 'true');
             qfAddItem.classList.toggle('qf__add-item--inactive', !canAdd);
+            qfAddItem.classList.toggle('qf__add-item--ready', canAdd);
         }
         if (hint) {
             const message = entryStatusMessage();
@@ -1381,7 +1413,8 @@ const initGalleryCarousel = () => {
             thicknessPicker?.renderOptions([]);
         } else {
             ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
-                document.getElementById(id).selectedIndex = 0;
+                const sel = document.getElementById(id);
+                if (sel) sel.selectedIndex = 0;
             });
         }
         const types = TYPE_OPTIONS[product] ?? [];
@@ -1459,8 +1492,8 @@ const initGalleryCarousel = () => {
         if (!isEntryComplete() || inquiryItems.length >= MAX_QUOTE_ITEMS) return false;
         const product = getProductValue();
         const base = {
-            width: qfWidth.value.trim(),
-            height: qfHeight.value.trim(),
+            width: readDimValue(qfWidth),
+            height: readDimValue(qfHeight),
             product,
             quantity: parseQuantity(qfQuantity?.value)
         };
@@ -1577,12 +1610,28 @@ const initGalleryCarousel = () => {
     qfQuantity?.addEventListener('change', scheduleAddBtnUpdate);
     qfQuantity?.addEventListener('blur', scheduleAddBtnUpdate);
 
+    const setAddItemFeedback = (message, type = 'info') => {
+        const hint = document.getElementById('qf-add-item-hint');
+        if (hint) {
+            hint.textContent = message;
+            hint.hidden = !message;
+            hint.className = `qf__field-hint qf__field-hint--entry${type ? ` qf__field-hint--${type}` : ''}`;
+        }
+        if (type === 'error') setFormStatus(message, 'error');
+        else if (type === 'success') setFormStatus(message, 'success');
+        else if (!message) setFormStatus('');
+    };
+
+    let addItemLock = 0;
     const handleAddItem = () => {
+        const now = Date.now();
+        if (now - addItemLock < 400) return;
+        addItemLock = now;
         syncQuoteHiddenFields();
-        scheduleAddBtnUpdate();
+        updateAddItemBtn();
         if (!addCurrentItem()) {
             const message = entryStatusMessage() || 'Enter width, height, product, and type before adding an item.';
-            setFormStatus(message, 'error');
+            setAddItemFeedback(message, 'error');
             const missing = getMissingEntryFields();
             const focusMap = {
                 width: qfWidth,
@@ -1594,9 +1643,11 @@ const initGalleryCarousel = () => {
                 thickness: document.getElementById('qf-thickness-native')
             };
             focusMap[missing[0]]?.focus?.();
-        } else {
-            setFormStatus('');
+            return;
         }
+        setAddItemFeedback('Item added to your inquiry list.', 'success');
+        qfInquiryList?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        scheduleAddBtnUpdate();
     };
 
     bindQuoteBtn(qfAddItem, handleAddItem);
@@ -1604,6 +1655,7 @@ const initGalleryCarousel = () => {
         e?.preventDefault?.();
         handleAddItem();
     };
+    window.__qfHandleAddItem = handleAddItem;
     window.__qfUpdateAddBtn = updateAddItemBtn;
 
     renderInquiryList();

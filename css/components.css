@@ -1438,8 +1438,22 @@ details.product-item[open] > .product-panel .product-panel__inner {
     opacity: 0.45;
     cursor: not-allowed;
 }
+.qf__add-item--ready {
+    opacity: 1;
+    box-shadow: var(--t-quote-btn-shadow, var(--t-btn-accent-shadow));
+}
+.qf__add-item {
+    position: relative;
+    z-index: 20;
+}
 .qf__field-hint--entry {
     margin-top: 8px;
+}
+.qf__field-hint--success {
+    color: #6fd4c7;
+}
+.qf__field-hint--error {
+    color: #e07070;
 }
 .qf__req { color: var(--t-accent); }
 
@@ -1955,6 +1969,12 @@ html:not(.touch-ui):not(.mobile-ui) .qf-picker--disabled .qf-picker__native {
 }
 
 /* ─── Mobile action bar ─── */
+#quote.section,
+#quote .wrap {
+    overflow-x: clip;
+    max-width: 100%;
+}
+
 .mobile-bar {
     display: none;
     position: fixed;
