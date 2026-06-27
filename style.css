@@ -1640,7 +1640,8 @@ html.is-revealed .hero__slide--active .hero__img {
     left: auto;
     right: 0;
 }
-.qf-type-glass__grid .qf-picker__list .product-row {
+.qf-type-glass__grid .qf-picker__list .product-row,
+.qf-picker__list .qf-picker__option {
     padding: 10px 12px;
 }
 .qf-type-glass__grid .qf-picker__list .product-row__label {
@@ -1787,7 +1788,8 @@ html.is-revealed .hero__slide--active .hero__img {
     background: rgba(184, 220, 240, 0.42);
     box-shadow: 0 0 6px rgba(184, 220, 240, 0.12);
 }
-.qf-picker__list .product-row {
+.qf-picker__list .product-row,
+.qf-picker__list .qf-picker__option {
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -3070,6 +3072,26 @@ html.is-revealed .faq-cta__card {
         grid-column: auto;
     }
     .qf__submit    { width: 100%; justify-content: center; }
+
+    .qf-picker.is-open .qf-picker__panel {
+        position: fixed;
+        left: max(16px, env(safe-area-inset-left));
+        right: max(16px, env(safe-area-inset-right));
+        bottom: calc(88px + env(safe-area-inset-bottom));
+        top: auto;
+        width: auto;
+        max-height: min(52vh, 380px);
+        z-index: 300;
+    }
+
+    .qf-picker.is-open .qf-picker__list {
+        max-height: min(46vh, 340px) !important;
+    }
+
+    body.quote-picker-open .mobile-bar {
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 
 @media (max-width: 480px) {
@@ -3113,6 +3135,36 @@ html.is-revealed .faq-cta__card {
 
     .section:not(.hero) {
         content-visibility: visible !important;
+    }
+
+    .quote__form,
+    .qf-picker__panel {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    #quote,
+    .quote__form,
+    .qf__entry,
+    .qf__field,
+    .qf-picker {
+        overflow: visible !important;
+        pointer-events: auto;
+    }
+
+    .qf-picker__option-wrap {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .qf-picker__list .qf-picker__option {
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        background: transparent;
+        border: none;
     }
 
     .product-panel {

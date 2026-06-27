@@ -1321,7 +1321,8 @@ html.is-revealed .hero__slide--active .hero__img {
     left: auto;
     right: 0;
 }
-.qf-type-glass__grid .qf-picker__list .product-row {
+.qf-type-glass__grid .qf-picker__list .product-row,
+.qf-picker__list .qf-picker__option {
     padding: 10px 12px;
 }
 .qf-type-glass__grid .qf-picker__list .product-row__label {
@@ -1468,7 +1469,8 @@ html.is-revealed .hero__slide--active .hero__img {
     background: rgba(184, 220, 240, 0.42);
     box-shadow: 0 0 6px rgba(184, 220, 240, 0.12);
 }
-.qf-picker__list .product-row {
+.qf-picker__list .product-row,
+.qf-picker__list .qf-picker__option {
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;

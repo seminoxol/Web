@@ -612,6 +612,7 @@ const initSiteLoader = async () => {
         if (panel) panel.hidden = true;
         picker.querySelector('.qf-picker__trigger').setAttribute('aria-expanded', 'false');
         if (openPicker === picker) openPicker = null;
+        document.body.classList.toggle('quote-picker-open', Boolean(openPicker));
     };
 
     const closeAllPickers = () => {
@@ -676,13 +677,18 @@ const initSiteLoader = async () => {
             list.replaceChildren();
             options.forEach(opt => {
                 const row = document.createElement('li');
-                row.className = 'product-row qf-picker__option';
-                row.role = 'option';
-                row.dataset.value = opt.value;
-                row.setAttribute('aria-selected', String(hidden.value === opt.value));
-                row.classList.toggle('is-selected', hidden.value === opt.value);
-                row.innerHTML = `<span class="product-row__label"><span class="product-row__name">${opt.name}</span><span class="product-row__sep"> — </span><span class="product-row__cn">${opt.cn}</span></span>`;
-                row.addEventListener('click', () => {
+                row.className = 'qf-picker__option-wrap';
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'product-row qf-picker__option';
+                btn.role = 'option';
+                btn.dataset.value = opt.value;
+                btn.setAttribute('aria-selected', String(hidden.value === opt.value));
+                btn.classList.toggle('is-selected', hidden.value === opt.value);
+                btn.innerHTML = `<span class="product-row__label"><span class="product-row__name">${opt.name}</span><span class="product-row__sep"> — </span><span class="product-row__cn">${opt.cn}</span></span>`;
+                const selectOption = e => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setValue(opt.value, opt.name, placeholder);
                     list.querySelectorAll('.qf-picker__option').forEach(el => {
                         const selected = el.dataset.value === opt.value;
@@ -692,7 +698,9 @@ const initSiteLoader = async () => {
                     closePicker(picker);
                     onSelect?.(opt.value);
                     updateAddItemBtn();
-                });
+                };
+                btn.addEventListener('click', selectOption);
+                row.appendChild(btn);
                 list.appendChild(row);
             });
             list.scrollTop = 0;
@@ -710,7 +718,9 @@ const initSiteLoader = async () => {
             closePicker(picker);
         };
 
-        trigger.addEventListener('click', () => {
+        trigger.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
             if (picker.classList.contains('qf-picker--disabled')) return;
             if (picker.classList.contains('is-open')) return closePicker(picker);
             closeAllPickers();
@@ -719,6 +729,7 @@ const initSiteLoader = async () => {
             list.scrollTop = 0;
             trigger.setAttribute('aria-expanded', 'true');
             openPicker = picker;
+            document.body.classList.add('quote-picker-open');
             requestAnimationFrame(() => {
                 updateScrollRail();
                 requestAnimationFrame(updateScrollRail);
