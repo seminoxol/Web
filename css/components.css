@@ -1345,8 +1345,11 @@ html.is-revealed .hero__slide--active .hero__img {
 }
 
 .qf-picker { position: relative; }
+.qf-picker.is-open { z-index: 250; }
 .qf-picker:not(.is-open) > .qf-picker__panel { display: none !important; }
 .qf-picker__trigger {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     width: 100%;
     display: flex;
     align-items: center;
@@ -1467,6 +1470,8 @@ html.is-revealed .hero__slide--active .hero__img {
 }
 .qf-picker__list .product-row {
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     padding: 9px 11px;
     margin: 0;
     border: none;
@@ -1690,8 +1695,10 @@ html.is-revealed .hero__slide--active .hero__img {
     gap: 10px;
     background: linear-gradient(180deg, transparent 0%, rgba(6, 21, 40, 0.94) 28%);
     backdrop-filter: blur(10px);
+    pointer-events: none;
 }
 .mobile-bar__btn {
+    pointer-events: auto;
     flex: 1;
     display: flex;
     align-items: center;

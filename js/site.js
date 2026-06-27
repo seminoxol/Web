@@ -385,8 +385,6 @@ const initSiteLoader = async () => {
     document.querySelectorAll('.reveal').forEach(el => revealIo.observe(el));
 
     const productCatalog = document.querySelector('.product-list--catalog');
-    const productClickAt = new WeakMap();
-    const PRODUCT_CLICK_MS = 700;
 
     const setProductPanelImage = (item, btn) => {
         const img = item.querySelector('.product-panel__img');
@@ -395,13 +393,24 @@ const initSiteLoader = async () => {
         const src = btn.dataset.image?.trim();
         const alt = btn.querySelector('.product-row__label')?.textContent.trim() ?? '';
         if (src) {
+            img.onload = () => {
+                img.hidden = false;
+                ph.hidden = true;
+            };
+            img.onerror = () => {
+                img.hidden = true;
+                ph.hidden = false;
+                ph.textContent = 'Image unavailable';
+            };
             img.src = src;
             img.alt = alt;
             img.loading = 'eager';
             img.decoding = 'async';
             img.draggable = false;
-            img.hidden = false;
-            ph.hidden = true;
+            if (img.complete && img.naturalWidth > 0) {
+                img.hidden = false;
+                ph.hidden = true;
+            }
         } else {
             img.removeAttribute('src');
             img.hidden = true;
@@ -428,12 +437,7 @@ const initSiteLoader = async () => {
         productCatalog.querySelectorAll('.product-item').forEach(item => {
             const btn = item.querySelector('.product-row');
             btn?.addEventListener('click', e => {
-                e.preventDefault();
-
-                const now = performance.now();
-                const last = productClickAt.get(item) ?? 0;
-                if (now - last < PRODUCT_CLICK_MS) return;
-                productClickAt.set(item, now);
+                e.stopPropagation();
 
                 const isOpen = item.classList.contains('is-open');
 
@@ -628,6 +632,8 @@ const initSiteLoader = async () => {
         const list = picker.querySelector('.qf-picker__list');
         const track = picker.querySelector('.qf-picker__scroll-track');
         const rail = picker.querySelector('.qf-picker__scroll-rail');
+
+        picker.addEventListener('click', e => e.stopPropagation());
 
         const syncPickerListHeight = () => {
             if (!list) return;

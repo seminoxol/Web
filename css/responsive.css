@@ -202,4 +202,17 @@
     .section:not(.hero) {
         content-visibility: visible !important;
     }
+
+    .product-panel {
+        display: block;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.45s var(--ease);
+        grid-template-rows: none;
+    }
+
+    .product-item.is-open .product-panel {
+        max-height: 420px;
+        grid-template-rows: none;
+    }
 }
