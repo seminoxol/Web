@@ -1306,11 +1306,7 @@ const initGalleryCarousel = () => {
         requestAnimationFrame(() => requestAnimationFrame(updateAddItemBtn));
     };
 
-    const updateAddItemBtn = () => {
-        if (window.__quoteInquiryApi?.updateButton) {
-            window.__quoteInquiryApi.updateButton();
-            return;
-        }
+    const refreshAddItemBtn = () => {
         if (!qfAddItem) return;
         const canAdd = isEntryComplete() && inquiryItems.length < MAX_QUOTE_ITEMS;
         const hint = document.getElementById('qf-add-item-hint');
@@ -1331,6 +1327,14 @@ const initGalleryCarousel = () => {
             hint.textContent = message;
             hint.hidden = !message || canAdd;
         }
+    };
+
+    const updateAddItemBtn = () => {
+        if (window.__quoteInquiryManaged && window.__quoteInquiryApi?.updateButton) {
+            window.__quoteInquiryApi.updateButton();
+            return;
+        }
+        refreshAddItemBtn();
     };
 
     const activateNativeSelect = sel => {
@@ -1744,7 +1748,7 @@ const initGalleryCarousel = () => {
             getItems: exportInquiryItems,
             reset: resetInquiry,
             tryAddCurrent: addCurrentItem,
-            updateButton: updateAddItemBtn,
+            updateButton: refreshAddItemBtn,
             isManaged: false
         };
         syncInquiryExport();
