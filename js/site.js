@@ -255,6 +255,7 @@ const initSiteLoader = async () => {
     await initSiteLoader();
     initInternalNavSkipLoader();
     if (isTouchUI()) document.documentElement.classList.add('touch-ui');
+    if (matchMedia('(max-width: 768px)').matches) document.documentElement.classList.add('mobile-ui');
     unlockBodyScroll();
     window.addEventListener('pageshow', unlockBodyScroll);
 
@@ -1095,20 +1096,23 @@ const initSiteLoader = async () => {
             const sel = document.getElementById(id);
             const picker = sel?.closest('.qf-picker');
             if (!sel) return;
+            if (useNativePickers) {
+                sel.disabled = false;
+                sel.removeAttribute('disabled');
+                picker?.classList.remove('qf-picker--disabled');
+                if (!enabled) sel.selectedIndex = 0;
+                return;
+            }
             if (enabled) {
                 sel.disabled = false;
                 sel.removeAttribute('disabled');
                 picker?.classList.remove('qf-picker--disabled');
-                picker?.querySelector('.qf-picker__trigger')?.removeAttribute('disabled');
             } else {
                 sel.disabled = true;
+                sel.selectedIndex = 0;
                 picker?.classList.add('qf-picker--disabled');
-                picker?.querySelector('.qf-picker__trigger')?.setAttribute('disabled', '');
             }
         });
-        glassTypePicker?.setDisabled(!enabled);
-        panePicker?.setDisabled(!enabled);
-        thicknessPicker?.setDisabled(!enabled);
     };
 
     const updateTypeFields = product => {
@@ -1125,37 +1129,45 @@ const initSiteLoader = async () => {
             typePicker?.reset('Select product first');
             typePicker?.renderOptions([]);
             setGlassPickersEnabled(false);
-            glassTypePicker?.reset('Choose type');
-            panePicker?.reset('Choose pane');
-            thicknessPicker?.reset('Choose mm');
-            glassTypePicker?.renderOptions([]);
-            panePicker?.renderOptions([]);
-            thicknessPicker?.renderOptions([]);
+            if (!useNativePickers) {
+                glassTypePicker?.reset('Choose type');
+                panePicker?.reset('Choose pane');
+                thicknessPicker?.reset('Choose mm');
+                glassTypePicker?.renderOptions([]);
+                panePicker?.renderOptions([]);
+                thicknessPicker?.renderOptions([]);
+            } else {
+                ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
+                    document.getElementById(id).selectedIndex = 0;
+                });
+            }
             updateAddItemBtn();
             return;
         }
 
         if (isGlass) {
             typePicker?.setDisabled(true);
-            const enableGlass = () => {
-                setGlassPickersEnabled(true);
-                glassTypePicker?.renderOptions(GLASS_TYPE_OPTIONS);
-                panePicker?.renderOptions(PANE_OPTIONS);
-                thicknessPicker?.renderOptions(THICKNESS_OPTIONS);
-                updateAddItemBtn();
-            };
-            if (useNativePickers) requestAnimationFrame(enableGlass);
-            else enableGlass();
+            setGlassPickersEnabled(true);
+            glassTypePicker?.renderOptions(GLASS_TYPE_OPTIONS);
+            panePicker?.renderOptions(PANE_OPTIONS);
+            thicknessPicker?.renderOptions(THICKNESS_OPTIONS);
+            updateAddItemBtn();
             return;
         }
 
         setGlassPickersEnabled(false);
-        glassTypePicker?.reset('Choose type');
-        panePicker?.reset('Choose pane');
-        thicknessPicker?.reset('Choose mm');
-        glassTypePicker?.renderOptions([]);
-        panePicker?.renderOptions([]);
-        thicknessPicker?.renderOptions([]);
+        if (!useNativePickers) {
+            glassTypePicker?.reset('Choose type');
+            panePicker?.reset('Choose pane');
+            thicknessPicker?.reset('Choose mm');
+            glassTypePicker?.renderOptions([]);
+            panePicker?.renderOptions([]);
+            thicknessPicker?.renderOptions([]);
+        } else {
+            ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
+                document.getElementById(id).selectedIndex = 0;
+            });
+        }
         const types = TYPE_OPTIONS[product] ?? [];
         typePicker?.reset(product ? 'Select type' : 'Select product first');
         typePicker?.renderOptions(types);

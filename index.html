@@ -17,6 +17,9 @@
                 || matchMedia('(hover: none) and (pointer: coarse)').matches) {
                 document.documentElement.classList.add('touch-ui');
             }
+            if (matchMedia('(max-width: 768px)').matches) {
+                document.documentElement.classList.add('mobile-ui');
+            }
         })();
     </script>
 
@@ -692,9 +695,9 @@
                                     <div class="qf-type-glass__grid">
                                         <div class="qf__field">
                                             <label id="qf-glass-type-label" for="qf-glass-type-native">Glass</label>
-                                            <div class="qf-picker qf-picker--disabled" id="qfGlassTypePicker">
+                                            <div class="qf-picker" id="qfGlassTypePicker">
                                                 <input type="hidden" id="qf-glass-type" value="">
-                                                <select class="qf-picker__native" id="qf-glass-type-native" aria-labelledby="qf-glass-type-label" disabled>
+                                                <select class="qf-picker__native" id="qf-glass-type-native" aria-labelledby="qf-glass-type-label">
                                                     <option value="">Choose type</option>
                                                     <option value="Clear">Clear — 透明</option>
                                                     <option value="Low-e">Low-e — 低辐射</option>
@@ -706,7 +709,7 @@
                                                     <option value="Special-Shaped">Special-Shaped — 异形</option>
                                                     <option value="Other">Other — 其他</option>
                                                 </select>
-                                                <button type="button" class="qf-picker__trigger" aria-labelledby="qf-glass-type-label" aria-haspopup="listbox" aria-expanded="false" disabled>
+                                                <button type="button" class="qf-picker__trigger" aria-labelledby="qf-glass-type-label" aria-haspopup="listbox" aria-expanded="false" tabindex="-1" aria-hidden="true">
                                                     <span class="qf-picker__value qf-picker__value--placeholder">Choose type</span>
                                                     <svg class="qf-picker__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                                                 </button>
@@ -725,15 +728,15 @@
                                         </div>
                                         <div class="qf__field">
                                             <label id="qf-pane-label" for="qf-pane-native">Pane</label>
-                                            <div class="qf-picker qf-picker--disabled" id="qfPanePicker">
+                                            <div class="qf-picker" id="qfPanePicker">
                                                 <input type="hidden" id="qf-pane" value="">
-                                                <select class="qf-picker__native" id="qf-pane-native" aria-labelledby="qf-pane-label" disabled>
+                                                <select class="qf-picker__native" id="qf-pane-native" aria-labelledby="qf-pane-label">
                                                     <option value="">Choose pane</option>
                                                     <option value="Single Pane">Single Pane — 单层玻璃</option>
                                                     <option value="Double Pane">Double Pane — 双层玻璃</option>
                                                     <option value="Triple Pane">Triple Pane — 三层玻璃</option>
                                                 </select>
-                                                <button type="button" class="qf-picker__trigger" aria-labelledby="qf-pane-label" aria-haspopup="listbox" aria-expanded="false" disabled>
+                                                <button type="button" class="qf-picker__trigger" aria-labelledby="qf-pane-label" aria-haspopup="listbox" aria-expanded="false" tabindex="-1" aria-hidden="true">
                                                     <span class="qf-picker__value qf-picker__value--placeholder">Choose pane</span>
                                                     <svg class="qf-picker__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                                                 </button>
@@ -752,9 +755,9 @@
                                         </div>
                                         <div class="qf__field">
                                             <label id="qf-thickness-label" for="qf-thickness-native">Thickness</label>
-                                            <div class="qf-picker qf-picker--disabled" id="qfThicknessPicker">
+                                            <div class="qf-picker" id="qfThicknessPicker">
                                                 <input type="hidden" id="qf-thickness" value="">
-                                                <select class="qf-picker__native" id="qf-thickness-native" aria-labelledby="qf-thickness-label" disabled>
+                                                <select class="qf-picker__native" id="qf-thickness-native" aria-labelledby="qf-thickness-label">
                                                     <option value="">Choose mm</option>
                                                     <option value="3mm">3mm — 3毫米</option>
                                                     <option value="4mm">4mm — 4毫米</option>
@@ -765,7 +768,7 @@
                                                     <option value="9mm">9mm — 9毫米</option>
                                                     <option value="10mm">10mm — 10毫米</option>
                                                 </select>
-                                                <button type="button" class="qf-picker__trigger" aria-labelledby="qf-thickness-label" aria-haspopup="listbox" aria-expanded="false" disabled>
+                                                <button type="button" class="qf-picker__trigger" aria-labelledby="qf-thickness-label" aria-haspopup="listbox" aria-expanded="false" tabindex="-1" aria-hidden="true">
                                                     <span class="qf-picker__value qf-picker__value--placeholder">Choose mm</span>
                                                     <svg class="qf-picker__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                                                 </button>
@@ -793,28 +796,9 @@
                     (function () {
                         var root = document.documentElement;
                         var useMobilePickers = root.classList.contains('touch-ui')
+                            || root.classList.contains('mobile-ui')
                             || matchMedia('(max-width: 768px)').matches;
                         if (!useMobilePickers) return;
-
-                        function setGlassFieldsEnabled(on) {
-                            ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(function (id) {
-                                var sel = document.getElementById(id);
-                                if (!sel) return;
-                                var picker = sel.closest('.qf-picker');
-                                var trigger = picker ? picker.querySelector('.qf-picker__trigger') : null;
-                                if (on) {
-                                    sel.disabled = false;
-                                    sel.removeAttribute('disabled');
-                                    if (picker) picker.classList.remove('qf-picker--disabled');
-                                    if (trigger) trigger.removeAttribute('disabled');
-                                } else {
-                                    sel.disabled = true;
-                                    if (picker) picker.classList.add('qf-picker--disabled');
-                                    if (trigger) trigger.setAttribute('disabled', '');
-                                    sel.selectedIndex = 0;
-                                }
-                            });
-                        }
 
                         function syncTypePanels(product) {
                             var standard = document.getElementById('qfTypeStandard');
@@ -825,11 +809,6 @@
                             standard.hidden = isGlass;
                             glass.hidden = !isGlass;
                             if (typeLabel) typeLabel.hidden = isGlass;
-                            if (isGlass) {
-                                requestAnimationFrame(function () { setGlassFieldsEnabled(true); });
-                            } else {
-                                setGlassFieldsEnabled(false);
-                            }
                         }
 
                         function onProductNativeChange(sel) {

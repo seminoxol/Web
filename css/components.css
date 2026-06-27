@@ -1463,7 +1463,7 @@ details.product-item[open] > .product-panel .product-panel__inner {
 .qf-picker { position: relative; }
 .qf-picker.is-open { z-index: 250; }
 .qf-picker:not(.is-open) > .qf-picker__panel { display: none !important; }
-html:not(.touch-ui) .qf-picker__native {
+html:not(.touch-ui):not(.mobile-ui) .qf-picker__native {
     display: none;
 }
 .qf-picker__native {
@@ -1488,11 +1488,14 @@ html:not(.touch-ui) .qf-picker__native {
     appearance: auto;
 }
 html.touch-ui .qf-picker__native,
+html.mobile-ui .qf-picker__native,
 .qf-picker--native .qf-picker__native {
     display: block;
 }
 html.touch-ui .qf-picker > .qf-picker__trigger,
 html.touch-ui .qf-picker > .qf-picker__panel,
+html.mobile-ui .qf-picker > .qf-picker__trigger,
+html.mobile-ui .qf-picker > .qf-picker__panel,
 .qf-picker--native > .qf-picker__trigger,
 .qf-picker--native > .qf-picker__panel {
     display: none !important;
@@ -1509,14 +1512,22 @@ html.touch-ui .qf-picker > .qf-picker__panel,
     pointer-events: none !important;
 }
 html.touch-ui .qf-picker--native,
-html.touch-ui .qf-picker:has(.qf-picker__native) {
+html.touch-ui .qf-picker:has(.qf-picker__native),
+html.mobile-ui .qf-picker--native,
+html.mobile-ui .qf-picker:has(.qf-picker__native) {
     position: relative;
     z-index: 2;
 }
 html.touch-ui .qf-type-glass__grid .qf-picker__native,
+html.mobile-ui .qf-type-glass__grid .qf-picker__native,
 .qf-picker--native .qf-type-glass__grid .qf-picker__native {
     position: relative;
     z-index: 5;
+}
+
+#qfTypeGlass:not([hidden]) .qf-picker__native {
+    pointer-events: auto !important;
+    opacity: 1 !important;
 }
 .qf-picker__native:focus {
     background: var(--t-input-focus-bg);

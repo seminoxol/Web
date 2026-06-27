@@ -346,6 +346,11 @@
 
     .quote__form .qf-picker__native {
         display: block !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        -webkit-appearance: menulist-button !important;
+        appearance: menulist-button !important;
     }
 
     .quote__form .qf-picker > .qf-picker__trigger,
@@ -353,6 +358,11 @@
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
+    }
+
+    #qfTypeGlass:not([hidden]) .qf-picker__native {
+        pointer-events: auto !important;
+        opacity: 1 !important;
     }
 
     .quote__form .qf-picker.is-open .qf-picker__panel {
