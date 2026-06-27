@@ -976,7 +976,7 @@ const initGalleryCarousel = () => {
             const onNativeChange = () => {
                 syncQuoteHiddenFields();
                 onSelect?.(select.value);
-                updateAddItemBtn();
+                scheduleAddBtnUpdate();
             };
             select.addEventListener('change', onNativeChange);
             select.addEventListener('input', onNativeChange);
@@ -1192,9 +1192,66 @@ const initGalleryCarousel = () => {
         return Boolean(readNativeSelect('qf-type-native') || typePicker?.getValue());
     };
 
+    const getMissingEntryFields = () => {
+        syncQuoteHiddenFields();
+        const missing = [];
+        if (!isValidDim(qfWidth?.value)) missing.push('width');
+        if (!isValidDim(qfHeight?.value)) missing.push('height');
+        const product = getProductValue();
+        if (!product) missing.push('product');
+        else if (product === 'Glass') {
+            if (!readNativeSelect('qf-glass-type-native')) missing.push('glass type');
+            if (!readNativeSelect('qf-pane-native')) missing.push('pane');
+            if (!readNativeSelect('qf-thickness-native')) missing.push('thickness');
+        } else if (!readNativeSelect('qf-type-native') && !typePicker?.getValue()) {
+            missing.push('type');
+        }
+        return missing;
+    };
+
+    const entryStatusMessage = () => {
+        if (inquiryItems.length >= MAX_QUOTE_ITEMS) {
+            return `Maximum ${MAX_QUOTE_ITEMS} items per request.`;
+        }
+        const missing = getMissingEntryFields();
+        if (!missing.length) return '';
+        const labels = {
+            width: 'width',
+            height: 'height',
+            product: 'product',
+            type: 'type',
+            'glass type': 'glass type',
+            pane: 'pane',
+            thickness: 'thickness'
+        };
+        const pretty = missing.map(key => labels[key] ?? key);
+        if (pretty.length === 1) return `Enter ${pretty[0]} to add an item.`;
+        return `Enter ${pretty.slice(0, -1).join(', ')} and ${pretty[pretty.length - 1]} to add an item.`;
+    };
+
+    const scheduleAddBtnUpdate = () => {
+        requestAnimationFrame(() => requestAnimationFrame(updateAddItemBtn));
+    };
+
     const updateAddItemBtn = () => {
         if (!qfAddItem) return;
-        qfAddItem.disabled = !isEntryComplete() || inquiryItems.length >= MAX_QUOTE_ITEMS;
+        const canAdd = isEntryComplete() && inquiryItems.length < MAX_QUOTE_ITEMS;
+        const hint = document.getElementById('qf-add-item-hint');
+        if (useNativePickers) {
+            qfAddItem.disabled = false;
+            qfAddItem.removeAttribute('disabled');
+            qfAddItem.setAttribute('aria-disabled', canAdd ? 'false' : 'true');
+            qfAddItem.classList.toggle('qf__add-item--inactive', !canAdd);
+        } else {
+            qfAddItem.disabled = !canAdd;
+            qfAddItem.setAttribute('aria-disabled', canAdd ? 'false' : 'true');
+            qfAddItem.classList.toggle('qf__add-item--inactive', !canAdd);
+        }
+        if (hint) {
+            const message = entryStatusMessage();
+            hint.textContent = message;
+            hint.hidden = !message || canAdd;
+        }
     };
 
     const activateNativeSelect = sel => {
@@ -1355,7 +1412,7 @@ const initGalleryCarousel = () => {
     if (typeNative) {
         const syncType = () => {
             syncQuoteHiddenFields();
-            updateAddItemBtn();
+            scheduleAddBtnUpdate();
         };
         ['change', 'input', 'blur'].forEach(ev => typeNative.addEventListener(ev, syncType));
     }
@@ -1364,9 +1421,11 @@ const initGalleryCarousel = () => {
         if (!sel) return;
         ['change', 'input', 'blur'].forEach(ev => sel.addEventListener(ev, () => {
             syncQuoteHiddenFields();
-            updateAddItemBtn();
+            scheduleAddBtnUpdate();
         }));
     });
+    document.getElementById('quoteForm')?.addEventListener('focusin', scheduleAddBtnUpdate);
+    window.visualViewport?.addEventListener('resize', scheduleAddBtnUpdate);
     document.addEventListener('qf-product-change', e => {
         updateTypeFields(e.detail?.value ?? '');
     });
@@ -1502,9 +1561,9 @@ const initGalleryCarousel = () => {
 
     if (qfWidth && qfHeight) {
         [qfWidth, qfHeight].forEach(el => {
-            ['input', 'change', 'blur'].forEach(ev => el.addEventListener(ev, () => {
+            ['input', 'change', 'blur', 'keyup', 'focusout'].forEach(ev => el.addEventListener(ev, () => {
                 sanitizeDimensionInput(el);
-                updateAddItemBtn();
+                scheduleAddBtnUpdate();
             }));
         });
     }
@@ -1513,16 +1572,28 @@ const initGalleryCarousel = () => {
         let cleaned = qfQuantity.value.replace(/\D/g, '').slice(0, 3);
         if (cleaned && parseInt(cleaned, 10) < 1) cleaned = '1';
         if (qfQuantity.value !== cleaned) qfQuantity.value = cleaned;
-        updateAddItemBtn();
+        scheduleAddBtnUpdate();
     });
-    qfQuantity?.addEventListener('change', updateAddItemBtn);
-    qfQuantity?.addEventListener('blur', updateAddItemBtn);
+    qfQuantity?.addEventListener('change', scheduleAddBtnUpdate);
+    qfQuantity?.addEventListener('blur', scheduleAddBtnUpdate);
 
     const handleAddItem = () => {
         syncQuoteHiddenFields();
-        updateAddItemBtn();
+        scheduleAddBtnUpdate();
         if (!addCurrentItem()) {
-            setFormStatus('Enter width, height, product, and type before adding an item.', 'error');
+            const message = entryStatusMessage() || 'Enter width, height, product, and type before adding an item.';
+            setFormStatus(message, 'error');
+            const missing = getMissingEntryFields();
+            const focusMap = {
+                width: qfWidth,
+                height: qfHeight,
+                product: document.getElementById('qf-product-native'),
+                type: document.getElementById('qf-type-native'),
+                'glass type': document.getElementById('qf-glass-type-native'),
+                pane: document.getElementById('qf-pane-native'),
+                thickness: document.getElementById('qf-thickness-native')
+            };
+            focusMap[missing[0]]?.focus?.();
         } else {
             setFormStatus('');
         }

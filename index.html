@@ -812,7 +812,8 @@
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="qf__add-item" id="qfAddItem" disabled onclick="window.__qfAddItem&&window.__qfAddItem(event)">Add item</button>
+                        <button type="button" class="qf__add-item qf__add-item--inactive" id="qfAddItem" aria-disabled="true" onclick="window.__qfAddItem&&window.__qfAddItem(event)">Add item</button>
+                        <p class="qf__field-hint qf__field-hint--entry" id="qf-add-item-hint">Enter width and height to add an item.</p>
                     </div>
 
                     <script>
@@ -872,6 +873,15 @@
                                 if (sel && hid) hid.value = sel.value;
                             });
                             if (typeof window.__qfUpdateAddBtn === 'function') window.__qfUpdateAddBtn();
+                            else scheduleFallbackAddBtnUpdate();
+                        }
+
+                        function scheduleFallbackAddBtnUpdate() {
+                            requestAnimationFrame(function () {
+                                requestAnimationFrame(function () {
+                                    if (typeof window.__qfUpdateAddBtn === 'function') window.__qfUpdateAddBtn();
+                                });
+                            });
                         }
 
                         function syncQuotePanels() {

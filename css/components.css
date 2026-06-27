@@ -1432,9 +1432,14 @@ details.product-item[open] > .product-panel .product-panel__inner {
     box-shadow: var(--t-quote-btn-hover-shadow, var(--t-btn-accent-hover-shadow));
     transform: translateY(-1px);
 }
-.qf__add-item:disabled {
+.qf__add-item:disabled,
+.qf__add-item--inactive,
+.qf__add-item[aria-disabled='true'] {
     opacity: 0.45;
     cursor: not-allowed;
+}
+.qf__field-hint--entry {
+    margin-top: 8px;
 }
 .qf__req { color: var(--t-accent); }
 
