@@ -852,7 +852,13 @@ const initSiteLoader = async () => {
             };
 
             const renderOptions = options => {
-                if (options.length && select.options.length > 1 && select.id === 'qf-product-native') {
+                const htmlPopulated = new Set([
+                    'qf-product-native',
+                    'qf-glass-type-native',
+                    'qf-pane-native',
+                    'qf-thickness-native'
+                ]);
+                if (options.length && select.options.length > 1 && htmlPopulated.has(select.id)) {
                     return;
                 }
                 clearSelect();
@@ -899,7 +905,8 @@ const initSiteLoader = async () => {
 
             trigger?.setAttribute('tabindex', '-1');
             trigger?.setAttribute('aria-hidden', 'true');
-            if (select.options.length <= 1) reset();
+            const htmlPopulated = ['qf-product-native', 'qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'];
+            if (select.options.length <= 1 && !htmlPopulated.includes(select.id)) reset();
             return { renderOptions, setDisabled, reset, getValue: () => hidden.value || select.value };
         }
 
@@ -1102,13 +1109,15 @@ const initSiteLoader = async () => {
 
         if (isGlass) {
             typePicker?.setDisabled(true);
-            typePicker?.reset('Select type');
             glassTypePicker?.setDisabled(false);
             panePicker?.setDisabled(false);
             thicknessPicker?.setDisabled(false);
-            glassTypePicker?.reset('Choose type');
-            panePicker?.reset('Choose pane');
-            thicknessPicker?.reset('Choose mm');
+            ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
+                const sel = document.getElementById(id);
+                const picker = sel?.closest('.qf-picker');
+                if (sel) sel.disabled = false;
+                picker?.classList.remove('qf-picker--disabled');
+            });
             glassTypePicker?.renderOptions(GLASS_TYPE_OPTIONS);
             panePicker?.renderOptions(PANE_OPTIONS);
             thicknessPicker?.renderOptions(THICKNESS_OPTIONS);
