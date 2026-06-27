@@ -230,7 +230,7 @@ app.get('*', (req, res) => {
     sendHtml(res, '404.html', { header: { solid: true } });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅  PCI Glass server running → http://localhost:${PORT}`);
     if (!mailConfigured) {
         console.warn('⚠️  Email not configured — quotes will be saved to data/quotes/ until EMAIL_USER and EMAIL_PASS are set in .env');
