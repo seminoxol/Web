@@ -8,6 +8,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { ownerEmail, customerEmail } = require('./lib/email');
 const { isEmailConfigured, saveQuoteLocally } = require('./lib/quotes');
+const { verifyEmail, isFormatValid } = require('./lib/emailValidation');
 const { renderPage, ASSET_VERSION } = require('./lib/pages');
 
 const app = express();
@@ -36,6 +37,7 @@ const parseItems = body => (Array.isArray(body.items) ? body.items : [])
     .filter(item => item.width || item.height || item.product || item.type);
 
 const quoteLimiter = rateLimit({ windowMs: 900000, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many requests. Please try again in 15 minutes.' } });
+const emailVerifyLimiter = rateLimit({ windowMs: 900000, max: 30, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many email checks. Please try again in a few minutes.' } });
 const transporter = mailConfigured ? nodemailer.createTransport({
     service: 'gmail',
     pool: true,
@@ -121,6 +123,21 @@ app.get('/api/quote/status', (_, res) => {
     res.json({ emailReady: mailConfigured });
 });
 
+app.post('/api/quote/verify-email', emailVerifyLimiter, async (req, res) => {
+    const email = sanitize(req.body.email);
+    if (!email) return res.status(400).json({ ok: false, error: 'Email is required.' });
+    if (!isFormatValid(email)) return res.status(400).json({ ok: false, error: 'Enter a valid email address.' });
+
+    try {
+        const result = await verifyEmail(email);
+        if (!result.ok) return res.status(400).json({ ok: false, error: result.reason });
+        res.json({ ok: true, email: result.email });
+    } catch (err) {
+        console.error('Email verify error:', err.message);
+        res.status(500).json({ ok: false, error: 'Could not verify email right now. Try again shortly.' });
+    }
+});
+
 app.post('/api/quote', quoteLimiter, async (req, res) => {
     if (sanitize(req.body.website)) {
         return res.status(400).json({ error: 'Invalid submission.' });
@@ -136,12 +153,22 @@ app.post('/api/quote', quoteLimiter, async (req, res) => {
 
     if (!consent) return res.status(400).json({ error: 'Please accept the privacy policy to continue.' });
     if (!name || !email || !phone) return res.status(400).json({ error: 'Name, email and phone are required.' });
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email address.' });
+
+    let verifiedEmail;
+    try {
+        const emailResult = await verifyEmail(email);
+        if (!emailResult.ok) return res.status(400).json({ error: emailResult.reason });
+        verifiedEmail = emailResult.email;
+    } catch (err) {
+        console.error('Email verify error:', err.message);
+        return res.status(400).json({ error: 'Could not verify that email address. Check for typos and try again.' });
+    }
+
     if (!items.length && !message) {
         return res.status(400).json({ error: 'Add at least one product to your inquiry list, or include a note.' });
     }
 
-    const payload = { name, company, email, phone, items, message };
+    const payload = { name, company, email: verifiedEmail, phone, items, message };
 
     if (!mailConfigured) {
         try {
@@ -159,14 +186,14 @@ app.post('/api/quote', quoteLimiter, async (req, res) => {
 
     try {
         await transporter.sendMail({
-            from: mailFrom, to: mailTo, replyTo: email,
+            from: mailFrom, to: mailTo, replyTo: verifiedEmail,
             subject: `New Quote Request — ${name}${company ? ` (${company})` : ''}`,
             html: ownerEmail(payload)
         });
 
         try {
             await transporter.sendMail({
-                from: `"PCI Glass" <${process.env.EMAIL_USER}>`, to: email,
+                from: `"PCI Glass" <${process.env.EMAIL_USER}>`, to: verifiedEmail,
                 subject: 'We received your quote request — PCI Glass',
                 html: customerEmail(name)
             });

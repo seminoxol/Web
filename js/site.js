@@ -1,5 +1,5 @@
 const THEME_MS = 520;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_FORMAT_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 const LOADER_MAX_MS = 3500;
 const LOADER_MIN_MS = 1100;
 const LOADER_HOLD_MS = 450;
@@ -1537,6 +1537,99 @@ const initGalleryCarousel = () => {
 
     renderInquiryList();
 
+    const qfEmail = document.getElementById('qf-email');
+    const qfEmailHint = document.getElementById('qf-email-hint');
+    let emailVerifyToken = 0;
+    let emailVerifyTimer;
+    let emailVerifiedValue = '';
+
+    const setEmailHint = (message, type = '') => {
+        if (!qfEmailHint) return;
+        qfEmailHint.textContent = message;
+        qfEmailHint.className = `qf__field-hint${type ? ` qf__field-hint--${type}` : ''}`;
+        qfEmailHint.hidden = !message;
+    };
+
+    const setEmailFieldState = valid => {
+        qfEmail?.classList.toggle('qf__input--invalid', valid === false);
+        qfEmail?.setAttribute('aria-invalid', valid === false ? 'true' : 'false');
+    };
+
+    const verifyQuoteEmail = async ({ quiet = false } = {}) => {
+        const email = qfEmail?.value.trim() ?? '';
+        if (!email) {
+            emailVerifiedValue = '';
+            setEmailFieldState(null);
+            setEmailHint('');
+            return { ok: false, reason: 'Email is required.' };
+        }
+        if (!EMAIL_FORMAT_RE.test(email)) {
+            emailVerifiedValue = '';
+            setEmailFieldState(false);
+            if (!quiet) setEmailHint('Enter a valid email address.', 'error');
+            return { ok: false, reason: 'Enter a valid email address.' };
+        }
+        if (location.protocol === 'file:') {
+            emailVerifiedValue = email.toLowerCase();
+            setEmailFieldState(true);
+            setEmailHint('');
+            return { ok: true, email: emailVerifiedValue };
+        }
+        if (emailVerifiedValue === email.toLowerCase()) {
+            setEmailFieldState(true);
+            setEmailHint('');
+            return { ok: true, email: emailVerifiedValue };
+        }
+
+        const token = ++emailVerifyToken;
+        if (!quiet) {
+            setEmailHint('Checking email…', 'pending');
+            setEmailFieldState(null);
+        }
+
+        try {
+            const res = await fetch('/api/quote/verify-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (token !== emailVerifyToken) return { ok: false, reason: 'Verification cancelled.' };
+            if (!res.ok || !data.ok) {
+                emailVerifiedValue = '';
+                setEmailFieldState(false);
+                const reason = data.error ?? 'That email could not be verified.';
+                if (!quiet) setEmailHint(reason, 'error');
+                return { ok: false, reason };
+            }
+            emailVerifiedValue = data.email ?? email.toLowerCase();
+            setEmailFieldState(true);
+            setEmailHint('');
+            return { ok: true, email: emailVerifiedValue };
+        } catch {
+            if (token !== emailVerifyToken) return { ok: false, reason: 'Verification cancelled.' };
+            emailVerifiedValue = '';
+            setEmailFieldState(false);
+            if (!quiet) setEmailHint('Could not verify email. Check your connection and try again.', 'error');
+            return { ok: false, reason: 'Could not verify email.' };
+        }
+    };
+
+    if (qfEmail) {
+        qfEmail.addEventListener('blur', () => {
+            void verifyQuoteEmail({ quiet: false });
+        });
+        qfEmail.addEventListener('input', () => {
+            emailVerifiedValue = '';
+            setEmailFieldState(null);
+            setEmailHint('');
+            clearTimeout(emailVerifyTimer);
+            emailVerifyTimer = setTimeout(() => {
+                void verifyQuoteEmail({ quiet: true });
+            }, 500);
+        });
+    }
+
     if (quoteForm && qfSubmit && qfSubmit.querySelector('.qf__submit-text')) {
         const qfSubmitText = qfSubmit.querySelector('.qf__submit-text');
         const SUBMIT_LABEL = 'Send Quote Request';
@@ -1562,7 +1655,6 @@ const initGalleryCarousel = () => {
             if (location.protocol === 'file:') return setSubmitLabel('Run npm start to submit.', 4000);
 
             const name = quoteForm.name.value.trim();
-            const email = quoteForm.email.value.trim();
             const phone = quoteForm.phone.value.trim();
             const message = quoteForm.message.value.trim();
             const consent = quoteForm.consent?.checked;
@@ -1572,14 +1664,17 @@ const initGalleryCarousel = () => {
                 return void quoteForm.consent?.focus();
             }
 
-            if (!name || !email || !phone) {
+            if (!name || !quoteForm.email.value.trim() || !phone) {
                 setFormStatus('Name, email, and phone are required.', 'error');
-                return void (!name ? quoteForm.name : !email ? quoteForm.email : quoteForm.phone).focus();
+                return void (!name ? quoteForm.name : !quoteForm.email.value.trim() ? quoteForm.email : quoteForm.phone).focus();
             }
-            if (!EMAIL_RE.test(email)) {
-                setFormStatus('Enter a valid email address.', 'error');
-                return void (quoteForm.email.focus(), setSubmitLabel('Invalid email address.', 4000));
+
+            const emailCheck = await verifyQuoteEmail({ quiet: false });
+            if (!emailCheck.ok) {
+                setFormStatus(emailCheck.reason, 'error');
+                return void (qfEmail?.focus(), setSubmitLabel(emailCheck.reason, 4000));
             }
+            const email = emailCheck.email;
 
             if (isEntryComplete()) addCurrentItem();
 

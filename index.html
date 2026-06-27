@@ -619,7 +619,8 @@
                     <div class="qf__row qf__row--two">
                         <div class="qf__field">
                             <label for="qf-email">Email <span class="qf__req">*</span></label>
-                            <input type="email" id="qf-email" name="email" placeholder="you@example.com" required>
+                            <input type="email" id="qf-email" name="email" placeholder="you@example.com" required autocomplete="email" inputmode="email" aria-describedby="qf-email-hint">
+                            <p class="qf__field-hint" id="qf-email-hint" hidden></p>
                         </div>
                         <div class="qf__field">
                             <label for="qf-phone">Phone <span class="qf__req">*</span></label>
