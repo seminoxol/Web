@@ -179,3 +179,33 @@
     .hero__scroll-line { animation: none; }
     html { scroll-behavior: auto; }
 }
+
+/* iOS Safari: loader overlay and scroll bugs */
+@supports (-webkit-touch-callout: none) {
+    html,
+    body {
+        overflow-y: auto !important;
+        height: auto;
+        min-height: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    html.is-revealed #siteLoader,
+    #siteLoader.is-exiting {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    .hero__media {
+        contain: none;
+    }
+
+    .reveal {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+
+    .section:not(.hero) {
+        content-visibility: visible !important;
+    }
+}

@@ -7,6 +7,9 @@
         html.is-loading body > *:not(#siteLoader) {
             visibility: hidden;
         }
+        html.is-revealed #siteLoader {
+            display: none !important;
+        }
         #siteLoader {
             position: fixed;
             inset: 0;

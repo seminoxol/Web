@@ -7,6 +7,8 @@ const LOADER_CURTAIN_MS = 2200;
 const LOADER_REVEAL_MS = LOADER_CURTAIN_MS + 200;
 const LOADER_OPEN_PERCENT = 100;
 const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const loadImage = img => {
     if (!img?.dataset.src) return;
     img.src = img.dataset.src;
@@ -79,6 +81,16 @@ const playLoaderExit = async () => {
     const root = document.documentElement;
     if (!loader || root.classList.contains('is-revealed') || loader.classList.contains('is-exiting')) return;
 
+    if (isIOS) {
+        root.classList.remove('is-loading');
+        root.classList.add('is-revealed');
+        root.removeAttribute('aria-busy');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        loader.remove();
+        return;
+    }
+
     loader.classList.add('is-exiting');
     loader.setAttribute('aria-hidden', 'true');
     root.removeAttribute('aria-busy');
@@ -102,12 +114,19 @@ const initSiteLoader = async () => {
         root.classList.remove('is-loading');
         root.classList.add('is-revealed');
         root.removeAttribute('aria-busy');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
         loader?.setAttribute('aria-hidden', 'true');
         loader?.remove();
     };
 
     if (sessionStorage.getItem('pci-skip-loader') === '1') {
         sessionStorage.removeItem('pci-skip-loader');
+        finishLoader();
+        return;
+    }
+
+    if (isIOS || prefersReducedMotion) {
         finishLoader();
         return;
     }
@@ -158,11 +177,11 @@ const initSiteLoader = async () => {
         });
 
         const elapsed = performance.now() - started;
-        if (!prefersReducedMotion && elapsed < LOADER_MIN_MS) {
+        if (!prefersReducedMotion && !isIOS && elapsed < LOADER_MIN_MS) {
             await new Promise(resolve => setTimeout(resolve, LOADER_MIN_MS - elapsed));
         }
 
-        if (prefersReducedMotion) return finishLoader();
+        if (prefersReducedMotion || isIOS) return finishLoader();
 
         await new Promise(resolve => setTimeout(resolve, LOADER_HOLD_MS));
         await playLoaderExit();
