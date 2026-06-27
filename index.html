@@ -600,7 +600,7 @@
                 </div>
 
                 <!-- Right: form -->
-                <form class="quote__form" id="quoteForm" novalidate>
+                <form class="quote__form" id="quoteForm" action="#quote" method="post" novalidate>
                     <div class="qf__honeypot visually-hidden" aria-hidden="true">
                         <label for="qf-website">Website</label>
                         <input type="text" id="qf-website" name="website" tabindex="-1" autocomplete="off">
@@ -934,10 +934,37 @@
                             });
                             syncQuotePanels();
                         }
+                        function bindSubmitGuard() {
+                            var form = document.getElementById('quoteForm');
+                            if (!form || form.dataset.submitGuard === '1') return;
+                            form.dataset.submitGuard = '1';
+                            form.addEventListener('submit', function (e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (typeof window.__quoteSubmitHandler === 'function') {
+                                    window.__quoteSubmitHandler(e);
+                                    return;
+                                }
+                                form.dataset.submitQueued = '1';
+                                var submitText = form.querySelector('.qf__submit-text');
+                                var status = document.getElementById('qfStatus');
+                                if (submitText) submitText.textContent = 'Loading…';
+                                if (status) {
+                                    status.hidden = false;
+                                    status.textContent = 'One moment — finishing setup…';
+                                    status.className = 'qf__status qf__status--info';
+                                }
+                            }, true);
+                        }
+
                         if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', wire);
+                            document.addEventListener('DOMContentLoaded', function () {
+                                wire();
+                                bindSubmitGuard();
+                            });
                         } else {
                             wire();
+                            bindSubmitGuard();
                         }
                     })();
                     </script>

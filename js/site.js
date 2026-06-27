@@ -1838,8 +1838,8 @@ const initGalleryCarousel = () => {
                 .catch(() => {});
         }
 
-        quoteForm.addEventListener('submit', async e => {
-            e.preventDefault();
+        const handleQuoteSubmit = async e => {
+            e?.preventDefault?.();
             if (location.protocol === 'file:') return setSubmitLabel('Run npm start to submit.', 4000);
 
             const name = quoteForm.name.value.trim();
@@ -1911,7 +1911,13 @@ const initGalleryCarousel = () => {
             } finally {
                 qfSubmit.disabled = location.protocol !== 'file:';
             }
-        });
+        };
+
+        window.__quoteSubmitHandler = handleQuoteSubmit;
+        if (quoteForm.dataset.submitQueued === '1') {
+            delete quoteForm.dataset.submitQueued;
+            void handleQuoteSubmit(new Event('submit'));
+        }
     }
 
     } catch (quoteErr) {
