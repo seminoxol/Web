@@ -67,18 +67,28 @@ const isTouchUI = () =>
 
 const bindTap = (el, handler) => {
     if (!el) return;
-    let fromTouch = false;
-    el.addEventListener('touchend', e => {
-        if (!e.cancelable) return;
-        e.preventDefault();
-        fromTouch = true;
+    let touchAt = 0;
+    const run = (e, fromTouch = false) => {
+        if (fromTouch) {
+            touchAt = Date.now();
+        } else if (Date.now() - touchAt < 500) {
+            return;
+        }
         handler(e);
-        window.setTimeout(() => { fromTouch = false; }, 450);
-    }, { passive: false });
-    el.addEventListener('click', e => {
-        if (fromTouch) return;
-        handler(e);
-    });
+    };
+    el.addEventListener('touchend', e => run(e, true), { passive: true });
+    el.addEventListener('click', e => run(e, false));
+};
+
+const unlockBodyScroll = () => {
+    document.body.classList.remove('nav-open', 'quote-picker-open');
+    document.body.style.removeProperty('position');
+    document.body.style.removeProperty('top');
+    document.body.style.removeProperty('left');
+    document.body.style.removeProperty('right');
+    document.body.style.removeProperty('width');
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
 };
 
 const initFaqAccordion = () => {
@@ -231,6 +241,9 @@ const initSiteLoader = async () => {
 (async () => {
     await initSiteLoader();
     initInternalNavSkipLoader();
+    if (isTouchUI()) document.documentElement.classList.add('touch-ui');
+    unlockBodyScroll();
+    window.addEventListener('pageshow', unlockBodyScroll);
 
     try {
 
@@ -353,7 +366,7 @@ const initSiteLoader = async () => {
         if (isMobileNav()) {
             nav?.setAttribute('aria-hidden', String(!open));
             if (open) nav?.removeAttribute('inert');
-            else nav?.setAttribute('inert', '');
+            else nav?.removeAttribute('inert');
         } else {
             nav?.removeAttribute('inert');
             nav?.setAttribute('aria-hidden', 'false');
@@ -392,7 +405,7 @@ const initSiteLoader = async () => {
             header.classList.add('header--mobile-nav');
             if (!nav?.classList.contains('nav--open')) {
                 nav?.setAttribute('aria-hidden', 'true');
-                nav?.setAttribute('inert', '');
+                nav?.removeAttribute('inert');
             }
             syncNavHitTarget(nav?.classList.contains('nav--open'));
             syncHeaderPhone();
@@ -419,7 +432,7 @@ const initSiteLoader = async () => {
         }
         if (!nav?.classList.contains('nav--open')) {
             nav?.setAttribute('aria-hidden', 'true');
-            nav?.setAttribute('inert', '');
+            nav?.removeAttribute('inert');
         }
         syncNavHitTarget(nav?.classList.contains('nav--open'));
         syncHeaderPhone();
@@ -604,28 +617,40 @@ const initSiteLoader = async () => {
         setProductPanelImage(item, btn);
     };
 
-    if (productCatalog) {
-        productCatalog.querySelectorAll('.product-item').forEach(item => {
-            const btn = item.querySelector('.product-row');
-            bindTap(btn, e => {
-                e.stopPropagation();
+    const handleProductRow = btn => {
+        const item = btn.closest('.product-item');
+        if (!item || !productCatalog) return;
 
-                const isOpen = item.classList.contains('is-open');
+        const isOpen = item.classList.contains('is-open');
 
-                productCatalog.querySelectorAll('.product-item.is-open').forEach(other => {
-                    if (other !== item) closeProductItem(other);
-                });
-
-                if (isOpen) closeProductItem(item);
-                else openProductItem(item, btn);
-            });
+        productCatalog.querySelectorAll('.product-item.is-open').forEach(other => {
+            if (other !== item) closeProductItem(other);
         });
+
+        if (isOpen) closeProductItem(item);
+        else openProductItem(item, btn);
+    };
+
+    if (productCatalog) {
+        let lastProductTap = 0;
+        const activateProductRow = e => {
+            const btn = e.target.closest('.product-row');
+            if (!btn || !productCatalog.contains(btn)) return;
+            const now = Date.now();
+            if (e.type === 'touchend') lastProductTap = now;
+            else if (now - lastProductTap < 500) return;
+            e.stopPropagation?.();
+            handleProductRow(btn);
+        };
+        productCatalog.addEventListener('click', activateProductRow);
+        productCatalog.addEventListener('touchend', activateProductRow, { passive: true });
         document.addEventListener('keydown', e => {
             if (e.key !== 'Escape') return;
             productCatalog.querySelectorAll('.product-item.is-open').forEach(closeProductItem);
         });
     }
 
+    try {
     const galleryCarousel = document.getElementById('galleryCarousel');
     if (galleryCarousel) {
         const track = document.getElementById('galleryTrack');
@@ -733,6 +758,9 @@ const initSiteLoader = async () => {
             galleryIo.observe(galleryCarousel);
         }
         }
+    }
+    } catch (galleryErr) {
+        console.error('Gallery init failed:', galleryErr);
     }
 
     const quoteForm = document.getElementById('quoteForm');
@@ -900,6 +928,8 @@ const initSiteLoader = async () => {
                 updateAddItemBtn();
             });
 
+            trigger.setAttribute('tabindex', '-1');
+            trigger.setAttribute('aria-hidden', 'true');
             picker.insertBefore(select, trigger);
             reset();
             return { renderOptions, setDisabled, reset, getValue: () => hidden.value || select.value };
