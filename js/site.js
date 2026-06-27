@@ -1817,6 +1817,12 @@ const initGalleryCarousel = () => {
         const SUBMIT_LABEL = 'Send Quote Request';
         const setSubmitLabel = (text, resetMs) => (qfSubmitText.textContent = text, resetMs && setTimeout(() => qfSubmitText.textContent = SUBMIT_LABEL, resetMs));
 
+        const fetchWithTimeout = (url, options, ms = 45000) => {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), ms);
+            return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(timer));
+        };
+
         if (location.protocol === 'file:') {
             qfSubmit.disabled = true;
             qfSubmitText.textContent = 'Run npm start to submit';
@@ -1871,7 +1877,7 @@ const initGalleryCarousel = () => {
             setFormStatus('');
             setSubmitLabel('Sending…');
             try {
-                const res = await fetch('/api/quote', {
+                const res = await fetchWithTimeout('/api/quote', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1884,19 +1890,24 @@ const initGalleryCarousel = () => {
                         })),
                         message
                     })
-                });
+                }, 45000);
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.success) throw new Error(data.error ?? 'Could not send. Please call us.');
                 quoteForm.reset();
                 resetInquiry();
                 const successMsg = data.storedLocally
-                    ? 'Request saved! We will follow up once email is configured.'
+                    ? (data.emailPending
+                        ? 'Request received! Email delivery is delayed — we saved your inquiry and will follow up.'
+                        : 'Request saved! We will follow up once email is configured.')
                     : 'Request sent! We will reply within one business day.';
                 setFormStatus(successMsg, 'success');
                 setSubmitLabel('Request sent!', 4000);
             } catch (err) {
-                setFormStatus(err.message ?? 'Could not send. Please call us.', 'error');
-                setSubmitLabel(err.message ?? 'Could not send. Please call us.', 4000);
+                const msg = err.name === 'AbortError'
+                    ? 'Request timed out. Please try again or call us at 437-779-9799.'
+                    : (err.message ?? 'Could not send. Please call us.');
+                setFormStatus(msg, 'error');
+                setSubmitLabel(msg, 4000);
             } finally {
                 qfSubmit.disabled = location.protocol !== 'file:';
             }

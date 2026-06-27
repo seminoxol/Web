@@ -38,12 +38,33 @@ const parseItems = body => (Array.isArray(body.items) ? body.items : [])
 
 const quoteLimiter = rateLimit({ windowMs: 900000, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many requests. Please try again in 15 minutes.' } });
 const emailVerifyLimiter = rateLimit({ windowMs: 900000, max: 30, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many email checks. Please try again in a few minutes.' } });
+const MAIL_SEND_TIMEOUT_MS = 20000;
+
 const transporter = mailConfigured ? nodemailer.createTransport({
     service: 'gmail',
     pool: true,
     maxConnections: 2,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
     auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
 }) : null;
+
+const sendMailWithTimeout = (mailOptions, ms = MAIL_SEND_TIMEOUT_MS) => Promise.race([
+    transporter.sendMail(mailOptions),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('MAIL_TIMEOUT')), ms))
+]);
+
+const saveQuoteAfterEmailFailure = (payload, err) => {
+    try {
+        const file = saveQuoteLocally(payload, ROOT);
+        console.warn(`📋  Quote saved locally after email failure (${err?.message ?? 'unknown'}): ${file}`);
+        return file;
+    } catch (saveErr) {
+        console.error('Quote save error:', saveErr.message);
+        return null;
+    }
+};
 
 const staticOpts = maxAge => ({
     dotfiles: 'deny',
@@ -185,18 +206,18 @@ app.post('/api/quote', quoteLimiter, async (req, res) => {
     const mailTo = process.env.EMAIL_TO ?? 'Pciglass@gmail.com';
 
     try {
-        await transporter.sendMail({
+        await sendMailWithTimeout({
             from: mailFrom, to: mailTo, replyTo: verifiedEmail,
             subject: `New Quote Request — ${name}${company ? ` (${company})` : ''}`,
             html: ownerEmail(payload)
         });
 
         try {
-            await transporter.sendMail({
+            await sendMailWithTimeout({
                 from: `"PCI Glass" <${process.env.EMAIL_USER}>`, to: verifiedEmail,
                 subject: 'We received your quote request — PCI Glass',
                 html: customerEmail(name)
-            });
+            }, 15000);
         } catch (customerErr) {
             console.error('Customer confirmation email failed:', customerErr.message);
         }
@@ -204,6 +225,13 @@ app.post('/api/quote', quoteLimiter, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error('Email error:', err.message);
+        if (saveQuoteAfterEmailFailure(payload, err)) {
+            return res.json({
+                success: true,
+                storedLocally: true,
+                emailPending: true
+            });
+        }
         res.status(500).json({ error: 'Could not send email. Please call us directly.' });
     }
 });
