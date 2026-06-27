@@ -1177,6 +1177,9 @@ html.is-revealed .hero__slide--active .hero__img {
     color: var(--t-accent);
     transform: rotate(90deg);
 }
+.product-list--catalog details.product-item {
+    interpolate-size: allow-keywords;
+}
 @media (prefers-reduced-motion: reduce) {
     .product-panel,
     .product-panel__inner,
