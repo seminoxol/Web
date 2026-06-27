@@ -112,10 +112,12 @@ app.get('/api/health', (_, res) => {
     const mail = getMailStatus();
     res.json({
         ok: true,
-        emailReady: mailConfigured,
+        emailReady: mailConfigured && mail.verified !== false,
         emailProvider: mail.provider,
         emailVerified: mail.verified,
-        emailError: mail.verified ? null : mail.error,
+        emailError: mail.verified ? mail.lastSendError || null : mail.error,
+        emailFrom: mail.sendFrom || null,
+        emailTo: mail.ownerAddress || null,
         assetVersion: ASSET_VERSION
     });
 });

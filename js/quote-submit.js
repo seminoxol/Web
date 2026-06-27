@@ -213,13 +213,11 @@
                 if (empty) empty.hidden = false;
             }
 
-            const successMsg = !data.emailSent
-                ? 'Request received! We saved your inquiry — email delivery is being fixed and we will follow up.'
-                : (data.storedLocally && data.emailPending
-                    ? 'Request received! Email delivery was delayed — we saved your inquiry and will follow up.'
-                    : (data.storedLocally
-                        ? 'Request saved! We will follow up once email is configured.'
-                        : 'Request sent! We will reply within one business day.'));
+            const successMsg = data.emailSent
+                ? 'Request sent! We will reply within one business day.'
+                : (data.emailPending
+                    ? 'Request received! We saved your inquiry and will follow up shortly.'
+                    : 'Request saved! We will follow up once email is configured.');
             setStatus(successMsg, 'success');
             setSubmitLabel('Request sent!', 4000);
         } catch (err) {
