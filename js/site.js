@@ -870,8 +870,18 @@ const initGalleryCarousel = () => {
         NATIVE_HIDDEN_PAIRS.forEach(([selectId, hiddenId]) => {
             const select = document.getElementById(selectId);
             const hidden = document.getElementById(hiddenId);
-            if (select && hidden) hidden.value = readNativeSelect(selectId);
+            if (!select || !hidden) return;
+            const fromNative = readNativeSelect(selectId);
+            if (fromNative) hidden.value = fromNative;
         });
+    };
+
+    const readFieldValue = (nativeId, picker, hiddenId) => {
+        const fromNative = readNativeSelect(nativeId);
+        if (fromNative) return fromNative;
+        const fromPicker = picker?.getValue?.()?.trim();
+        if (fromPicker) return fromPicker;
+        return document.getElementById(hiddenId)?.value?.trim() ?? '';
     };
 
     const bindQuoteBtn = (el, handler) => {
@@ -1247,12 +1257,12 @@ const initGalleryCarousel = () => {
         if (!product && !isGlassEntry('')) return false;
         if (isGlassEntry(product)) {
             return Boolean(
-                readNativeSelect('qf-glass-type-native')
-                && readNativeSelect('qf-pane-native')
-                && readNativeSelect('qf-thickness-native')
+                readFieldValue('qf-glass-type-native', glassTypePicker, 'qf-glass-type')
+                && readFieldValue('qf-pane-native', panePicker, 'qf-pane')
+                && readFieldValue('qf-thickness-native', thicknessPicker, 'qf-thickness')
             );
         }
-        return Boolean(readNativeSelect('qf-type-native') || typePicker?.getValue());
+        return Boolean(readFieldValue('qf-type-native', typePicker, 'qf-type'));
     };
 
     const getMissingEntryFields = () => {
@@ -1263,10 +1273,10 @@ const initGalleryCarousel = () => {
         const product = getProductValue();
         if (!product && !isGlassEntry('')) missing.push('product');
         else if (isGlassEntry(product)) {
-            if (!readNativeSelect('qf-glass-type-native')) missing.push('glass type');
-            if (!readNativeSelect('qf-pane-native')) missing.push('pane');
-            if (!readNativeSelect('qf-thickness-native')) missing.push('thickness');
-        } else if (!readNativeSelect('qf-type-native') && !typePicker?.getValue()) {
+            if (!readFieldValue('qf-glass-type-native', glassTypePicker, 'qf-glass-type')) missing.push('glass type');
+            if (!readFieldValue('qf-pane-native', panePicker, 'qf-pane')) missing.push('pane');
+            if (!readFieldValue('qf-thickness-native', thicknessPicker, 'qf-thickness')) missing.push('thickness');
+        } else if (!readFieldValue('qf-type-native', typePicker, 'qf-type')) {
             missing.push('type');
         }
         return missing;

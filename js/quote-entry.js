@@ -34,16 +34,18 @@
 
     const $ = id => document.getElementById(id);
 
-    if (!$('quoteForm') || !$(IDS.addBtn)) return;
+    const isTouchUI = () =>
+        /iPad|iPhone|iPod|Android/i.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+        || matchMedia('(hover: none) and (pointer: coarse)').matches
+        || matchMedia('(max-width: 768px)').matches;
 
     let items = [];
     let tapLock = 0;
     let refreshTimer = 0;
 
-    const isTouchUI = () =>
-        /iPad|iPhone|iPod|Android/i.test(navigator.userAgent)
-        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-        || matchMedia('(hover: none) and (pointer: coarse)').matches;
+    // Mobile/touch only — desktop uses custom pickers via site.js (hidden inputs).
+    if (!$('quoteForm') || !$(IDS.addBtn) || !isTouchUI()) return;
 
     const readSelectRaw = el => {
         if (!el) return '';
@@ -85,18 +87,36 @@
         if (!el) return '';
         if (el.disabled && id === IDS.type && isGlassMode()) return 'n/a';
 
+        const hiddenId = HIDDEN_PAIRS.find(([selectId]) => selectId === id)?.[1];
+        const fromHidden = hiddenId && $(hiddenId)?.value?.trim();
         const fromSelect = readSelectRaw(el);
         if (fromSelect) return fromSelect;
-
-        const hiddenId = HIDDEN_PAIRS.find(([selectId]) => selectId === id)?.[1];
-        return (hiddenId && $(hiddenId)?.value?.trim()) || '';
+        if (fromHidden) return fromHidden;
+        return '';
     };
 
     const syncHiddens = () => {
         HIDDEN_PAIRS.forEach(([selectId, hiddenId]) => {
             const sel = $(selectId);
             const hidden = $(hiddenId);
-            if (sel && hidden) hidden.value = readSelectRaw(sel);
+            if (!sel || !hidden) return;
+            const fromNative = readSelectRaw(sel);
+            if (fromNative) {
+                hidden.value = fromNative;
+                return;
+            }
+            const fromHidden = hidden.value?.trim() || '';
+            if (fromHidden) {
+                sel.value = fromHidden;
+                if (sel.value !== fromHidden) {
+                    for (let i = 0; i < sel.options.length; i++) {
+                        if (sel.options[i].value === fromHidden) {
+                            sel.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
         });
     };
 
