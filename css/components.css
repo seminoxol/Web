@@ -1531,6 +1531,7 @@ html:not(.touch-ui):not(.mobile-ui) .qf-picker__panel {
     background: var(--t-picker-panel-bg);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    isolation: isolate;
 }
 html:not(.touch-ui):not(.mobile-ui) .qf-picker__panel::before {
     background: linear-gradient(to bottom, var(--t-picker-panel-bg) 15%, transparent);
@@ -1538,12 +1539,11 @@ html:not(.touch-ui):not(.mobile-ui) .qf-picker__panel::before {
 html:not(.touch-ui):not(.mobile-ui) .qf-picker__panel::after {
     background: linear-gradient(to top, var(--t-picker-panel-bg) 15%, transparent);
 }
-html:not(.touch-ui):not(.mobile-ui) .qf-picker__list {
-    background: var(--t-picker-panel-bg);
-}
-html:not(.touch-ui):not(.mobile-ui) .qf-picker__list .product-row,
-html:not(.touch-ui):not(.mobile-ui) .qf-picker__list .qf-picker__option {
-    background: var(--t-picker-panel-bg);
+html:not(.touch-ui):not(.mobile-ui) .qf-type-glass__grid > .qf__field:first-child:has(.qf-picker.is-open) .qf-picker__panel {
+    width: 100%;
+    min-width: 100%;
+    left: 0;
+    right: 0;
 }
 html:not(.touch-ui):not(.mobile-ui) .qf-type-glass__grid > .qf__field:nth-child(2):has(.qf-picker.is-open) .qf-picker__panel,
 html:not(.touch-ui):not(.mobile-ui) .qf-type-glass__grid > .qf__field:nth-child(3):has(.qf-picker.is-open) .qf-picker__panel {
@@ -1557,6 +1557,10 @@ html:not(.touch-ui):not(.mobile-ui) .qf-type-glass__grid > .qf__field:nth-child(
 html:not(.touch-ui):not(.mobile-ui) .qf-type-glass__grid > .qf__field:nth-child(3):has(.qf-picker.is-open) .qf-picker__panel {
     left: auto;
     right: 0;
+}
+body.quote-picker-open .qf__field-hint--entry,
+body.quote-picker-open .qf__status:not([hidden]) {
+    visibility: hidden;
 }
 
 .qf-type-glass__grid .qf-picker__list .product-row,
@@ -1757,7 +1761,14 @@ html:not(.touch-ui):not(.mobile-ui) .qf-picker--disabled .qf-picker__native {
     -ms-overflow-style: none;
     list-style: none;
     margin: 0;
-    padding: 6px 20px 6px 6px;
+    padding: 6px;
+    background: var(--t-picker-panel-bg, var(--t-form-bg));
+}
+.qf-picker__list .qf-picker__option-wrap {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 .qf-picker__list::-webkit-scrollbar { display: none; }
 .qf-picker__scroll-track {
@@ -1792,20 +1803,27 @@ html:not(.touch-ui):not(.mobile-ui) .qf-picker--disabled .qf-picker__native {
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    padding: 9px 11px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    box-sizing: border-box;
+    text-align: left;
+    padding: 10px 12px;
     margin: 0;
     border: none;
+    border-bottom: none;
     border-radius: 8px;
-    grid-template-columns: 1fr;
-    transition: background 0.2s var(--ease);
+    background: var(--t-picker-panel-bg, var(--t-form-bg));
+    transition: background 0.15s var(--ease);
 }
 .qf-picker__list .product-row__label {
-    font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 400;
-    line-height: 1.5;
-    color: var(--t-fg);
-    letter-spacing: 0.01em;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    min-width: 0;
 }
 .qf-picker__list .product-row__name,
 .qf-picker__list .product-row__cn {
@@ -1826,13 +1844,13 @@ html:not(.touch-ui):not(.mobile-ui) .qf-picker--disabled .qf-picker__native {
     color: var(--t-fg-dim);
     opacity: 0.65;
 }
-.qf-picker__list .product-row::before { display: none; }
+.qf-picker__list .product-row::before { display: none !important; }
 .qf-picker__list .product-row:hover {
-    background: var(--t-row-hover);
+    background: var(--t-picker-row-hover, var(--t-row-hover));
 }
 .qf-picker__list .product-row.is-highlighted,
 .qf-picker__list .product-row.is-selected {
-    background: var(--t-input-focus-bg);
+    background: var(--t-picker-row-selected, var(--t-input-focus-bg));
 }
 .qf-picker--disabled .qf-picker__trigger {
     opacity: 0.55;

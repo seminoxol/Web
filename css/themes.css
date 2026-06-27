@@ -36,6 +36,8 @@
     --t-dot-hover: rgba(184, 220, 240, 0.3);
     --t-form-bg: rgba(14, 20, 30, 0.92);
     --t-picker-panel-bg: #0e141e;
+    --t-picker-row-hover: #1a2433;
+    --t-picker-row-selected: #243040;
     --t-form-border: rgba(184, 220, 240, 0.12);
     --t-form-shadow: 0 20px 60px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.12);
     --t-form-blur: none;
@@ -202,6 +204,8 @@
     --t-dot-hover: rgba(44, 36, 22, 0.28);
     --t-form-bg: #F0EAE0;
     --t-picker-panel-bg: #F0EAE0;
+    --t-picker-row-hover: #e4dcd0;
+    --t-picker-row-selected: #d9cfc0;
     --t-form-border: #CEC4B8;
     --t-form-shadow: 0 8px 40px rgba(44, 36, 22, 0.08);
     --t-form-blur: none;
