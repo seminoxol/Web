@@ -8,7 +8,14 @@
 
             window.addEventListener('load', function () {
                 setTimeout(function () {
-                    if (!document.documentElement.classList.contains('is-revealed')) runLoaderExit();
+                    if (document.documentElement.classList.contains('is-revealed')) return;
+                    if (typeof window.__pciPlayLoaderExit === 'function') {
+                        window.__pciPlayLoaderExit();
+                        return;
+                    }
+                    document.documentElement.classList.remove('is-loading');
+                    document.documentElement.classList.add('is-revealed');
+                    document.getElementById('siteLoader')?.remove();
                 }, 3800);
             });
         })();

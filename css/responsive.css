@@ -21,6 +21,11 @@
 }
 
 @media (max-width: 768px) {
+    .reveal {
+        opacity: 1;
+        transform: none;
+    }
+
     .header {
         overflow: visible;
     }
