@@ -917,6 +917,9 @@ const initGalleryCarousel = () => {
     const closePicker = picker => {
         if (!picker) return;
         picker.classList.remove('is-open');
+        picker.querySelectorAll('.qf-picker__option.is-highlighted').forEach(el => {
+            el.classList.remove('is-highlighted');
+        });
         const panel = picker.querySelector('.qf-picker__panel');
         if (panel) panel.hidden = true;
         picker.querySelector('.qf-picker__trigger')?.setAttribute('aria-expanded', 'false');
@@ -1167,11 +1170,21 @@ const initGalleryCarousel = () => {
 
         let highlightedIndex = -1;
 
+        const scrollOptionIntoView = (option, listEl) => {
+            if (!option || !listEl) return;
+            const optionTop = option.offsetTop;
+            const optionBottom = optionTop + option.offsetHeight;
+            const viewTop = listEl.scrollTop;
+            const viewBottom = viewTop + listEl.clientHeight;
+            if (optionTop < viewTop) listEl.scrollTop = optionTop;
+            else if (optionBottom > viewBottom) listEl.scrollTop = optionBottom - listEl.clientHeight;
+        };
+
         const setHighlighted = index => {
             const options = [...list.querySelectorAll('.qf-picker__option')];
             highlightedIndex = index;
             options.forEach((row, i) => row.classList.toggle('is-highlighted', i === index));
-            if (index >= 0 && options[index]) options[index].scrollIntoView({ block: 'nearest' });
+            if (index >= 0 && options[index]) scrollOptionIntoView(options[index], list);
         };
 
         trigger.addEventListener('keydown', e => {
@@ -1563,7 +1576,11 @@ const initGalleryCarousel = () => {
     }
 
     if (!useNativePickers) {
-        const closeQuotePickersOnScroll = () => closeAllPickers();
+        const closeQuotePickersOnScroll = e => {
+            const target = e.target;
+            if (target instanceof Element && target.closest('.qf-picker__list, .qf-picker__panel')) return;
+            closeAllPickers();
+        };
         window.addEventListener('scroll', closeQuotePickersOnScroll, { passive: true, capture: true });
         document.getElementById('quote')?.addEventListener('scroll', closeQuotePickersOnScroll, { passive: true, capture: true });
     }
