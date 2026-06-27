@@ -1263,6 +1263,7 @@ html.is-revealed .hero__slide--active .hero__img {
 .gallery__track {
     display: flex;
     gap: 12px;
+    align-items: flex-start;
     transition: transform 0.55s var(--ease);
     backface-visibility: hidden;
 }
@@ -1274,20 +1275,25 @@ html.is-revealed .hero__slide--active .hero__img {
 
 .gallery__cell {
     flex: 0 0 auto;
+    align-self: flex-start;
     border-radius: 4px;
     overflow: hidden;
     position: relative;
     margin: 0;
     aspect-ratio: 3 / 2;
     height: auto;
+    max-height: 300px;
     transition: width 0.55s var(--ease);
     backface-visibility: hidden;
 }
 
 .gallery__cell img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     display: block;
     transition: filter 0.3s ease;
     filter: var(--t-gallery-img-filter);
@@ -3012,44 +3018,25 @@ html.is-revealed .faq-cta__card {
     gap: 10px;
 }
 
-.header--mobile-nav .header__actions {
-    display: flex;
-    flex: 1;
-    justify-content: center;
-    align-items: center;
-    min-width: 0;
-    gap: 0;
-}
-
-.header--mobile-nav .header__actions .btn--accent { display: none; }
-
-.header--mobile-nav .header__phone {
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
 .header--mobile-nav .theme-btn,
 .header--mobile-nav .menu-btn {
     flex-shrink: 0;
 }
 
+.header--mobile-nav .header__actions {
+    display: none !important;
+}
+
+.header--mobile-nav .theme-btn {
+    margin-left: auto;
+}
+
 .header--mobile-nav.header--hide-phone .header__actions {
-    display: none;
+    display: none !important;
 }
 
 .header--mobile-nav.header--hide-phone .theme-btn {
     margin-left: auto;
-}
-
-@media (max-width: 720px) {
-    .header--mobile-nav .header__actions {
-        display: none;
-    }
-
-    .header--mobile-nav .theme-btn {
-        margin-left: auto;
-    }
 }
 
 .header--mobile-nav .nav {
@@ -3162,20 +3149,7 @@ html.is-revealed .faq-cta__card {
     }
 
     .header .header__actions {
-        display: flex;
-        flex: 1;
-        justify-content: center;
-        align-items: center;
-        min-width: 0;
-        gap: 0;
-    }
-
-    .header .header__actions .btn--accent { display: none; }
-
-    .header .header__phone {
-        font-size: 13px;
-        font-weight: 600;
-        white-space: nowrap;
+        display: none !important;
     }
 
     .header .theme-btn,
@@ -3183,22 +3157,8 @@ html.is-revealed .faq-cta__card {
         flex-shrink: 0;
     }
 
-    .header.header--hide-phone .header__actions {
-        display: none;
-    }
-
-    .header.header--hide-phone .theme-btn {
+    .header .theme-btn {
         margin-left: auto;
-    }
-
-    @media (max-width: 720px) {
-        .header .header__actions {
-            display: none;
-        }
-
-        .header .theme-btn {
-            margin-left: auto;
-        }
     }
 
     .header .nav {
@@ -3479,13 +3439,22 @@ html.is-revealed .faq-cta__card {
         grid-template-rows: none;
     }
 
-    .gallery__viewport {
-        max-width: 100%;
+    .gallery__track {
+        align-items: flex-start;
     }
 
     .gallery__cell {
         aspect-ratio: 3 / 2;
         height: auto !important;
-        max-height: min(62vw, 300px);
+        max-height: min(56vw, 280px) !important;
+        align-self: flex-start;
+    }
+
+    .gallery__cell img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 }

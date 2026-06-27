@@ -944,6 +944,7 @@ html.is-revealed .hero__slide--active .hero__img {
 .gallery__track {
     display: flex;
     gap: 12px;
+    align-items: flex-start;
     transition: transform 0.55s var(--ease);
     backface-visibility: hidden;
 }
@@ -955,20 +956,25 @@ html.is-revealed .hero__slide--active .hero__img {
 
 .gallery__cell {
     flex: 0 0 auto;
+    align-self: flex-start;
     border-radius: 4px;
     overflow: hidden;
     position: relative;
     margin: 0;
     aspect-ratio: 3 / 2;
     height: auto;
+    max-height: 300px;
     transition: width 0.55s var(--ease);
     backface-visibility: hidden;
 }
 
 .gallery__cell img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     display: block;
     transition: filter 0.3s ease;
     filter: var(--t-gallery-img-filter);

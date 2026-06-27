@@ -651,11 +651,8 @@ const initSiteLoader = async () => {
         const updateGallery = (instant = false) => {
             if (instant) galleryCarousel.classList.add('is-resizing');
             const viewport = galleryCarousel.querySelector('.gallery__viewport');
-            const rawVw = viewport?.clientWidth ?? 0;
-            const vw = Math.min(
-                rawVw > 0 ? rawVw : galleryCarousel.clientWidth,
-                window.innerWidth
-            );
+            const rawVw = viewport?.getBoundingClientRect().width ?? viewport?.clientWidth ?? 0;
+            const vw = Math.max(0, Math.min(rawVw, galleryCarousel.getBoundingClientRect().width, window.innerWidth));
             if (vw < 48) return;
 
             const per = perPage(), maxPage = totalPages() - 1;
@@ -666,11 +663,14 @@ const initSiteLoader = async () => {
             const standardW = Math.max(0, (vw - GAP * (per - 1)) / per);
             const activeW = isPartial ? Math.max(0, (vw - GAP * (visibleCount - 1)) / visibleCount) : standardW;
             const offset = startIdx * (standardW + GAP);
+            const maxCellH = Math.min(Math.round(window.innerWidth * 0.55), 300);
             cells.forEach((cell, i) => {
                 const onPage = i >= startIdx && i < startIdx + visibleCount;
                 const w = isPartial && onPage ? activeW : standardW;
+                const h = Math.min(Math.round(w * 2 / 3), maxCellH);
                 cell.style.width = `${w}px`;
-                cell.style.height = '';
+                cell.style.height = `${h}px`;
+                cell.style.maxHeight = `${maxCellH}px`;
                 if (onPage) loadGalleryCellImage(cell);
             });
             track.style.transform = `translate3d(-${offset}px, 0, 0)`;
