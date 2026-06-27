@@ -825,6 +825,36 @@ const initGalleryCarousel = () => {
     let openPicker = null;
     const useNativePickers = isTouchUI() || matchMedia('(max-width: 768px)').matches;
 
+    const NATIVE_HIDDEN_PAIRS = [
+        ['qf-product-native', 'qf-product'],
+        ['qf-type-native', 'qf-type'],
+        ['qf-glass-type-native', 'qf-glass-type'],
+        ['qf-pane-native', 'qf-pane'],
+        ['qf-thickness-native', 'qf-thickness']
+    ];
+
+    const readNativeSelect = id => document.getElementById(id)?.value?.trim() ?? '';
+
+    const syncQuoteHiddenFields = () => {
+        NATIVE_HIDDEN_PAIRS.forEach(([selectId, hiddenId]) => {
+            const select = document.getElementById(selectId);
+            const hidden = document.getElementById(hiddenId);
+            if (select && hidden) hidden.value = select.value;
+        });
+    };
+
+    const bindQuoteBtn = (el, handler) => {
+        if (!el) return;
+        const run = e => {
+            e.preventDefault();
+            e.stopPropagation();
+            syncQuoteHiddenFields();
+            handler(e);
+        };
+        el.addEventListener('click', run);
+        el.addEventListener('touchend', run, { passive: false });
+    };
+
     const closePicker = picker => {
         if (!picker) return;
         picker.classList.remove('is-open');
@@ -944,9 +974,8 @@ const initGalleryCarousel = () => {
             };
 
             const onNativeChange = () => {
-                const value = select.value;
-                hidden.value = value;
-                onSelect?.(value);
+                syncQuoteHiddenFields();
+                onSelect?.(select.value);
                 updateAddItemBtn();
             };
             select.addEventListener('change', onNativeChange);
@@ -1143,12 +1172,24 @@ const initGalleryCarousel = () => {
         return Number.isFinite(n) && n > 0;
     };
 
+    const getProductValue = () => {
+        syncQuoteHiddenFields();
+        return productPicker?.getValue() || readNativeSelect('qf-product-native');
+    };
+
     const isEntryComplete = () => {
-        if (!isValidDim(qfWidth?.value) || !isValidDim(qfHeight?.value) || !productPicker?.getValue()) return false;
-        if (productPicker.getValue() === 'Glass') {
-            return Boolean(glassTypePicker?.getValue() && panePicker?.getValue() && thicknessPicker?.getValue());
+        syncQuoteHiddenFields();
+        if (!isValidDim(qfWidth?.value) || !isValidDim(qfHeight?.value)) return false;
+        const product = getProductValue();
+        if (!product) return false;
+        if (product === 'Glass') {
+            return Boolean(
+                readNativeSelect('qf-glass-type-native')
+                && readNativeSelect('qf-pane-native')
+                && readNativeSelect('qf-thickness-native')
+            );
         }
-        return Boolean(typePicker?.getValue());
+        return Boolean(readNativeSelect('qf-type-native') || typePicker?.getValue());
     };
 
     const updateAddItemBtn = () => {
@@ -1304,10 +1345,8 @@ const initGalleryCarousel = () => {
         }
         if (productNative) {
             const syncProduct = () => {
-                const value = productNative.value;
-                const hidden = document.getElementById('qf-product');
-                if (hidden) hidden.value = value;
-                updateTypeFields(value);
+                syncQuoteHiddenFields();
+                updateTypeFields(productNative.value);
             };
             ['change', 'input', 'blur'].forEach(ev => productNative.addEventListener(ev, syncProduct));
         }
@@ -1315,12 +1354,19 @@ const initGalleryCarousel = () => {
     const typeNative = document.getElementById('qf-type-native');
     if (typeNative) {
         const syncType = () => {
-            const hidden = document.getElementById('qf-type');
-            if (hidden) hidden.value = typeNative.value;
+            syncQuoteHiddenFields();
             updateAddItemBtn();
         };
         ['change', 'input', 'blur'].forEach(ev => typeNative.addEventListener(ev, syncType));
     }
+    ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        ['change', 'input', 'blur'].forEach(ev => sel.addEventListener(ev, () => {
+            syncQuoteHiddenFields();
+            updateAddItemBtn();
+        }));
+    });
     document.addEventListener('qf-product-change', e => {
         updateTypeFields(e.detail?.value ?? '');
     });
@@ -1350,8 +1396,9 @@ const initGalleryCarousel = () => {
     }
 
     const addCurrentItem = () => {
-        if (!productPicker || !isEntryComplete() || inquiryItems.length >= MAX_QUOTE_ITEMS) return false;
-        const product = productPicker.getValue();
+        syncQuoteHiddenFields();
+        if (!isEntryComplete() || inquiryItems.length >= MAX_QUOTE_ITEMS) return false;
+        const product = getProductValue();
         const base = {
             width: qfWidth.value.trim(),
             height: qfHeight.value.trim(),
@@ -1359,9 +1406,9 @@ const initGalleryCarousel = () => {
             quantity: parseQuantity(qfQuantity?.value)
         };
         if (product === 'Glass') {
-            const glassType = glassTypePicker?.getValue();
-            const pane = panePicker?.getValue();
-            const thickness = thicknessPicker?.getValue();
+            const glassType = readNativeSelect('qf-glass-type-native') || glassTypePicker?.getValue();
+            const pane = readNativeSelect('qf-pane-native') || panePicker?.getValue();
+            const thickness = readNativeSelect('qf-thickness-native') || thicknessPicker?.getValue();
             if (!glassType || !pane || !thickness) return false;
             inquiryItems.push({
                 ...base,
@@ -1371,7 +1418,7 @@ const initGalleryCarousel = () => {
                 type: `${pane} - ${glassType} - ${thickness}`
             });
         } else {
-            const type = typePicker?.getValue();
+            const type = readNativeSelect('qf-type-native') || typePicker?.getValue();
             if (!type) return false;
             inquiryItems.push({ ...base, type });
         }
@@ -1455,10 +1502,10 @@ const initGalleryCarousel = () => {
 
     if (qfWidth && qfHeight) {
         [qfWidth, qfHeight].forEach(el => {
-            el.addEventListener('input', () => {
+            ['input', 'change', 'blur'].forEach(ev => el.addEventListener(ev, () => {
                 sanitizeDimensionInput(el);
                 updateAddItemBtn();
-            });
+            }));
         });
     }
 
@@ -1468,14 +1515,25 @@ const initGalleryCarousel = () => {
         if (qfQuantity.value !== cleaned) qfQuantity.value = cleaned;
         updateAddItemBtn();
     });
+    qfQuantity?.addEventListener('change', updateAddItemBtn);
+    qfQuantity?.addEventListener('blur', updateAddItemBtn);
 
-    bindTap(qfAddItem, () => {
+    const handleAddItem = () => {
+        syncQuoteHiddenFields();
+        updateAddItemBtn();
         if (!addCurrentItem()) {
             setFormStatus('Enter width, height, product, and type before adding an item.', 'error');
         } else {
             setFormStatus('');
         }
-    });
+    };
+
+    bindQuoteBtn(qfAddItem, handleAddItem);
+    window.__qfAddItem = e => {
+        e?.preventDefault?.();
+        handleAddItem();
+    };
+    window.__qfUpdateAddBtn = updateAddItemBtn;
 
     renderInquiryList();
 

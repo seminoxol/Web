@@ -385,6 +385,12 @@
     }
     .qf__submit    { width: 100%; justify-content: center; }
 
+    .qf__add-item {
+        pointer-events: auto !important;
+        touch-action: manipulation;
+        min-height: 44px;
+    }
+
     .quote__form .qf-picker__native {
         display: block !important;
         visibility: visible !important;
@@ -515,6 +521,12 @@
 
     .quote__form .qf-picker__native {
         display: block !important;
+    }
+
+    .qf__add-item {
+        pointer-events: auto !important;
+        touch-action: manipulation;
+        min-height: 44px;
     }
 
     .qf-picker--disabled .qf-picker__native {

@@ -811,7 +811,7 @@
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="qf__add-item" id="qfAddItem" disabled>Add item</button>
+                        <button type="button" class="qf__add-item" id="qfAddItem" disabled onclick="window.__qfAddItem&&window.__qfAddItem(event)">Add item</button>
                     </div>
 
                     <script>
@@ -858,6 +858,21 @@
                             if (typeHidden) typeHidden.value = '';
                         }
 
+                        function syncAllHiddens() {
+                            [
+                                ['qf-product-native', 'qf-product'],
+                                ['qf-type-native', 'qf-type'],
+                                ['qf-glass-type-native', 'qf-glass-type'],
+                                ['qf-pane-native', 'qf-pane'],
+                                ['qf-thickness-native', 'qf-thickness']
+                            ].forEach(function (pair) {
+                                var sel = document.getElementById(pair[0]);
+                                var hid = document.getElementById(pair[1]);
+                                if (sel && hid) hid.value = sel.value;
+                            });
+                            if (typeof window.__qfUpdateAddBtn === 'function') window.__qfUpdateAddBtn();
+                        }
+
                         function syncQuotePanels() {
                             var sel = document.getElementById('qf-product-native');
                             if (!sel) return;
@@ -876,6 +891,7 @@
                             }
                             if (typeLabel) typeLabel.hidden = isGlass;
                             syncTypeSelect(product);
+                            syncAllHiddens();
                             document.dispatchEvent(new CustomEvent('qf-product-change', {
                                 detail: { value: product }
                             }));
@@ -891,13 +907,19 @@
                             }
                             if (typeSel) {
                                 var syncTypeHidden = function () {
-                                    var hidden = document.getElementById('qf-type');
-                                    if (hidden) hidden.value = typeSel.value;
+                                    syncAllHiddens();
                                 };
                                 ['change', 'input', 'blur'].forEach(function (ev) {
                                     typeSel.addEventListener(ev, syncTypeHidden);
                                 });
                             }
+                            ['qf-glass-type-native', 'qf-pane-native', 'qf-thickness-native'].forEach(function (id) {
+                                var sel = document.getElementById(id);
+                                if (!sel) return;
+                                ['change', 'input', 'blur'].forEach(function (ev) {
+                                    sel.addEventListener(ev, syncAllHiddens);
+                                });
+                            });
                             syncQuotePanels();
                         }
                         if (document.readyState === 'loading') {
