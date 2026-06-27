@@ -94,6 +94,8 @@
     --t-footer-border: var(--border);
     --t-footer-nav: inherit;
     --t-footer-top-border: var(--border);
+    --t-mobile-bar-bg: linear-gradient(180deg, transparent 0%, rgba(6, 21, 40, 0.94) 28%);
+    --t-mobile-bar-border-top: transparent;
 }
 
 [data-theme="dark"] .header {
@@ -257,6 +259,8 @@
     --t-footer-border: #BEB4A8;
     --t-footer-nav: #5A4E3E;
     --t-footer-top-border: rgba(44, 36, 22, 0.1);
+    --t-mobile-bar-bg: linear-gradient(180deg, transparent 0%, rgba(237, 231, 220, 0.97) 24%);
+    --t-mobile-bar-border-top: var(--t-border);
 }
 
 [data-theme="light"] .hero { background: #EDE7DC; }

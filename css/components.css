@@ -1756,7 +1756,8 @@ html.is-revealed .hero__slide--active .hero__img {
     z-index: 190;
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
     gap: 10px;
-    background: linear-gradient(180deg, transparent 0%, rgba(6, 21, 40, 0.94) 28%);
+    background: var(--t-mobile-bar-bg);
+    border-top: 1px solid var(--t-mobile-bar-border-top);
     backdrop-filter: blur(10px);
     pointer-events: none;
 }
