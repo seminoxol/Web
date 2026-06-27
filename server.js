@@ -1,15 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const compression = require('compression');
-const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { ownerEmail, customerEmail } = require('./lib/email');
 const { isEmailConfigured, saveQuoteLocally } = require('./lib/quotes');
 const { verifyEmail, isFormatValid } = require('./lib/emailValidation');
 const { renderPage, ASSET_VERSION } = require('./lib/pages');
+const { initMail, getMailStatus, sendQuoteEmails } = require('./lib/mail');
 
 const app = express();
 const ROOT = __dirname;
@@ -38,33 +37,6 @@ const parseItems = body => (Array.isArray(body.items) ? body.items : [])
 
 const quoteLimiter = rateLimit({ windowMs: 900000, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many requests. Please try again in 15 minutes.' } });
 const emailVerifyLimiter = rateLimit({ windowMs: 900000, max: 30, standardHeaders: true, legacyHeaders: false, message: { error: 'Too many email checks. Please try again in a few minutes.' } });
-const MAIL_SEND_TIMEOUT_MS = 20000;
-
-const transporter = mailConfigured ? nodemailer.createTransport({
-    service: 'gmail',
-    pool: true,
-    maxConnections: 2,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 20000,
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-}) : null;
-
-const sendMailWithTimeout = (mailOptions, ms = MAIL_SEND_TIMEOUT_MS) => Promise.race([
-    transporter.sendMail(mailOptions),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('MAIL_TIMEOUT')), ms))
-]);
-
-const saveQuoteAfterEmailFailure = (payload, err) => {
-    try {
-        const file = saveQuoteLocally(payload, ROOT);
-        console.warn(`📋  Quote saved locally after email failure (${err?.message ?? 'unknown'}): ${file}`);
-        return file;
-    } catch (saveErr) {
-        console.error('Quote save error:', saveErr.message);
-        return null;
-    }
-};
 
 const staticOpts = maxAge => ({
     dotfiles: 'deny',
@@ -137,7 +109,15 @@ app.use('/js', express.static(path.join(ROOT, 'js'), staticOpts(IS_DEV ? '0' : '
 app.use('/images', express.static(path.join(ROOT, 'images'), staticOpts('30d')));
 
 app.get('/api/health', (_, res) => {
-    res.json({ ok: true, emailReady: mailConfigured, assetVersion: ASSET_VERSION });
+    const mail = getMailStatus();
+    res.json({
+        ok: true,
+        emailReady: mailConfigured,
+        emailProvider: mail.provider,
+        emailVerified: mail.verified,
+        emailError: mail.verified ? null : mail.error,
+        assetVersion: ASSET_VERSION
+    });
 });
 
 app.get('/api/quote/status', (_, res) => {
@@ -191,49 +171,43 @@ app.post('/api/quote', quoteLimiter, async (req, res) => {
 
     const payload = { name, company, email: verifiedEmail, phone, items, message };
 
-    if (!mailConfigured) {
-        try {
-            const file = saveQuoteLocally(payload, ROOT);
-            console.log(`📋  Quote saved locally (email not configured): ${file}`);
-            return res.json({ success: true, storedLocally: true });
-        } catch (err) {
-            console.error('Quote save error:', err.message);
-            return res.status(500).json({ error: 'Could not save your request. Please call us directly.' });
-        }
-    }
-
-    const mailFrom = `"PCI Glass Website" <${process.env.EMAIL_USER}>`;
-    const mailTo = process.env.EMAIL_TO ?? 'Pciglass@gmail.com';
-
+    let savedFile = null;
     try {
-        await sendMailWithTimeout({
-            from: mailFrom, to: mailTo, replyTo: verifiedEmail,
-            subject: `New Quote Request — ${name}${company ? ` (${company})` : ''}`,
-            html: ownerEmail(payload)
-        });
-
-        try {
-            await sendMailWithTimeout({
-                from: `"PCI Glass" <${process.env.EMAIL_USER}>`, to: verifiedEmail,
-                subject: 'We received your quote request — PCI Glass',
-                html: customerEmail(name)
-            }, 15000);
-        } catch (customerErr) {
-            console.error('Customer confirmation email failed:', customerErr.message);
-        }
-
-        res.json({ success: true });
+        savedFile = saveQuoteLocally(payload, ROOT);
+        console.log(`📋  Quote saved: ${savedFile}`);
     } catch (err) {
-        console.error('Email error:', err.message);
-        if (saveQuoteAfterEmailFailure(payload, err)) {
-            return res.json({
-                success: true,
-                storedLocally: true,
-                emailPending: true
-            });
-        }
-        res.status(500).json({ error: 'Could not send email. Please call us directly.' });
+        console.error('Quote save error:', err.message);
     }
+
+    if (!mailConfigured) {
+        if (savedFile) return res.json({ success: true, storedLocally: true, emailSent: false });
+        return res.status(500).json({ error: 'Could not save your request. Please call us directly.' });
+    }
+
+    const result = await sendQuoteEmails(payload);
+
+    if (result.ownerSent) {
+        return res.json({
+            success: true,
+            emailSent: true,
+            provider: result.provider,
+            customerSent: result.customerSent,
+            storedLocally: Boolean(savedFile)
+        });
+    }
+
+    if (savedFile || result.webhookSent) {
+        return res.json({
+            success: true,
+            storedLocally: true,
+            emailSent: false,
+            emailPending: true,
+            webhookSent: result.webhookSent,
+            error: result.error
+        });
+    }
+
+    res.status(500).json({ error: result.error || 'Could not send email. Please call us directly.' });
 });
 
 const sendHtml = (res, file, opts = {}) => {
@@ -288,11 +262,16 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅  PCI Glass server running → http://localhost:${PORT}`);
-    if (!mailConfigured) {
-        console.warn('⚠️  Email not configured — quotes will be saved to data/quotes/ until EMAIL_USER and EMAIL_PASS are set in .env');
-        return;
-    }
-    transporter.verify()
-        .then(() => console.log('📧  Gmail connection ready'))
-        .catch(err => console.warn('⚠️  Gmail connection check failed:', err.message));
+    void initMail().then(mail => {
+        if (!mail.ready) {
+            console.warn('⚠️  Email not configured — quotes will be saved to data/quotes/ until credentials are added.');
+            return;
+        }
+        if (mail.provider === 'resend') {
+            console.log('📧  Resend email ready');
+            return;
+        }
+        if (mail.verified) console.log('📧  Gmail SMTP ready');
+        else console.warn('⚠️  Gmail SMTP check failed:', mail.error);
+    });
 });
