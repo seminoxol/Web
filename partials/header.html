@@ -12,7 +12,13 @@
         <nav class="nav" id="nav" aria-label="Main">
             <a href="/#about" class="nav__link">About</a>
             <a href="/#services" class="nav__link">Services</a>
-            <a href="/#products" class="nav__link">Products</a>
+            <div class="nav__item nav__item--dropdown">
+                <a href="/#products" class="nav__link nav__link--has-menu{{NAV_PRODUCTS_CLASS}}" aria-haspopup="true" aria-expanded="false" aria-controls="nav-products-menu" id="nav-products-trigger"{{NAV_PRODUCTS_ARIA}}>Products</a>
+                <div class="nav__dropdown" id="nav-products-menu" role="menu" aria-labelledby="nav-products-trigger">
+                    <a href="/glass/" class="nav__dropdown-link" role="menuitem">Glass</a>
+                    <a href="/#quote" class="nav__dropdown-link" role="menuitem">Windows</a>
+                </div>
+            </div>
             <a href="/#gallery" class="nav__link">Gallery</a>
             <a href="/#contact" class="nav__link">Contact</a>
             <a href="/faq/" class="nav__link{{NAV_FAQ_CLASS}}"{{NAV_FAQ_ARIA}}>FAQ</a>
@@ -29,7 +35,7 @@
             <svg id="themeIconLight" class="is-hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
 
-        <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="nav">
+        <button type="button" class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="nav">
             <span></span><span></span>
         </button>
     </div>

@@ -7,7 +7,7 @@
     <script>
         try {
             const t = localStorage.getItem('theme');
-            if (t) document.documentElement.setAttribute('data-theme', t);
+            if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
         } catch (_) {}
     </script>
     <title>Page not found — PCI Glass</title>

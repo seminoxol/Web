@@ -155,6 +155,12 @@
             return;
         }
 
+        if (!window.__quoteConstraints?.isValidPhone(phone)) {
+            setStatus('Enter a valid phone number (at least 10 digits).', 'error');
+            form.phone?.focus();
+            return;
+        }
+
         submitting = true;
         submitBtn.disabled = true;
         setSubmitLabel('Sending…');

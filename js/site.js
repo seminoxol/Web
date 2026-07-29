@@ -267,9 +267,11 @@ const initGalleryCarousel = () => {
     viewport.classList.add('gallery__viewport--scroll');
 
     const GAP = 12;
+    const GALLERY_SCROLL_MS = 400;
     let page = 0;
     let resizeTimer;
     let scrollSyncTimer;
+    let galleryBusy = false;
 
     const perPage = () => (window.innerWidth < 600 ? 1 : window.innerWidth < 1024 ? 2 : 3);
     const totalPages = () => Math.ceil(cells.length / perPage());
@@ -322,6 +324,7 @@ const initGalleryCarousel = () => {
     };
 
     const scrollToPage = (targetPage, instant = true) => {
+        if (galleryBusy) return;
         const maxPage = totalPages() - 1;
         page = Math.max(0, Math.min(targetPage, maxPage));
         if (!layoutCells()) {
@@ -332,12 +335,14 @@ const initGalleryCarousel = () => {
         if (!cell) return;
         updateUi();
         const left = cellScrollLeft(cell);
+        galleryBusy = true;
         try {
             viewport.scrollTo({ left, behavior: instant || isTouchUI() ? 'auto' : 'smooth' });
         } catch {
             viewport.scrollLeft = left;
         }
         if (isTouchUI()) resetHorizontalPageScroll();
+        setTimeout(() => { galleryBusy = false; }, GALLERY_SCROLL_MS);
     };
 
     const syncPageFromScroll = () => {
@@ -424,10 +429,27 @@ const initGalleryCarousel = () => {
 (async () => {
     await initSiteLoader();
     initInternalNavSkipLoader();
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOSDevice) document.documentElement.classList.add('ios-ui');
+    else document.documentElement.classList.add('use-content-visibility');
     if (isTouchUI()) document.documentElement.classList.add('touch-ui');
     if (matchMedia('(max-width: 768px)').matches) document.documentElement.classList.add('mobile-ui');
     unlockBodyScroll();
-    window.addEventListener('pageshow', unlockBodyScroll);
+    window.addEventListener('pageshow', e => {
+        unlockBodyScroll();
+        if (!e.persisted) return;
+        const loader = document.getElementById('siteLoader');
+        const root = document.documentElement;
+        if (loader?.classList.contains('is-exiting') || root.classList.contains('is-loading')) {
+            loader?.remove();
+            root.classList.remove('is-loading');
+            root.classList.add('is-revealed');
+            root.removeAttribute('aria-busy');
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        }
+    });
 
     try { initGalleryCarousel(); } catch (galleryErr) {
         console.error('Gallery init failed:', galleryErr);
@@ -441,6 +463,7 @@ const initGalleryCarousel = () => {
     const themeOverlay = document.getElementById('themeOverlay');
 
     const setTheme = theme => {
+        if (theme !== 'light' && theme !== 'dark') theme = 'dark';
         html.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
         const isDark = theme === 'dark';
@@ -488,6 +511,30 @@ const initGalleryCarousel = () => {
     const menuMq = matchMedia(MENU_MQ);
     const isTouchDevice = () => matchMedia('(hover: none) and (pointer: coarse)').matches;
     let menuScrollY = 0;
+    let releaseFocusTrap = null;
+
+    const trapFocus = container => {
+        const focusable = [...container.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )].filter(el => el.offsetParent !== null || el === document.activeElement);
+        if (!focusable.length) return () => {};
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const onKeyDown = e => {
+            if (e.key !== 'Tab') return;
+            if (e.shiftKey) {
+                if (document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            } else if (document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        };
+        container.addEventListener('keydown', onKeyDown);
+        return () => container.removeEventListener('keydown', onKeyDown);
+    };
 
     const isMobileNav = () =>
         (header?.classList.contains('header--mobile-nav') ?? false)
@@ -554,7 +601,7 @@ const initGalleryCarousel = () => {
         if (isMobileNav()) {
             nav?.setAttribute('aria-hidden', String(!open));
             if (open) nav?.removeAttribute('inert');
-            else nav?.removeAttribute('inert');
+            else nav?.setAttribute('inert', '');
         } else {
             nav?.removeAttribute('inert');
             nav?.setAttribute('aria-hidden', 'false');
@@ -572,7 +619,16 @@ const initGalleryCarousel = () => {
                 document.body.style.overflow = 'hidden';
             }
             syncNavHitTarget(true);
+            releaseFocusTrap?.();
+            releaseFocusTrap = nav ? trapFocus(nav) : null;
+            const firstLink = nav?.querySelector('.nav__link');
+            requestAnimationFrame(() => (firstLink ?? menuBtn)?.focus());
             return;
+        }
+        releaseFocusTrap?.();
+        releaseFocusTrap = null;
+        if (!open && location.hash === '#nav') {
+            history.replaceState(null, '', `${location.pathname}${location.search}`);
         }
         if (isTouchDevice()) {
             document.body.style.removeProperty('position');
@@ -584,6 +640,7 @@ const initGalleryCarousel = () => {
         }
         document.body.style.overflow = '';
         syncNavHitTarget(open);
+        if (!open) menuBtn?.focus();
     };
 
     const syncNavMode = () => {
@@ -659,11 +716,14 @@ const initGalleryCarousel = () => {
         e.preventDefault();
         toggleMenu();
     });
-    nav?.querySelectorAll('.nav__link').forEach(link => {
+    nav?.querySelectorAll('.nav__link, .nav__dropdown-link').forEach(link => {
         link.addEventListener('click', e => {
             const href = link.getAttribute('href');
             const wasOpen = nav?.classList.contains('nav--open');
             setMenuOpen(false);
+            link.closest('.nav__item--dropdown')?.classList.remove('is-open');
+            const trigger = link.closest('.nav__item--dropdown')?.querySelector('.nav__link--has-menu');
+            trigger?.setAttribute('aria-expanded', 'false');
             if (!wasOpen || !href) return;
 
             try {
@@ -683,36 +743,108 @@ const initGalleryCarousel = () => {
         });
     });
 
+    nav?.querySelectorAll('.nav__item--dropdown').forEach(item => {
+        const trigger = item.querySelector('.nav__link--has-menu');
+        if (!trigger) return;
+        const setOpen = open => {
+            item.classList.toggle('is-open', open);
+            trigger.setAttribute('aria-expanded', String(open));
+        };
+        item.addEventListener('mouseenter', () => {
+            if (!isMobileNav()) setOpen(true);
+        });
+        item.addEventListener('mouseleave', () => {
+            if (!isMobileNav()) setOpen(false);
+        });
+        item.addEventListener('focusin', () => {
+            if (!isMobileNav()) setOpen(true);
+        });
+        item.addEventListener('focusout', e => {
+            if (!isMobileNav() && !item.contains(e.relatedTarget)) setOpen(false);
+        });
+    });
+
     const imageSlides = document.querySelectorAll('.hero__slide');
     const textSlides = document.querySelectorAll('.hero__text');
     const tabs = document.querySelectorAll('.hero__tab');
     const slideSets = [imageSlides, textSlides, tabs];
     const activeClasses = ['hero__slide--active', 'hero__text--active', 'hero__tab--active'];
-    let current = 0, timer;
+    let current = 0, timer, heroBusy = false;
 
-    const restartTabAnimation = tab => (tab.classList.remove('hero__tab--active'),
-        requestAnimationFrame(() => requestAnimationFrame(() => tab.classList.add('hero__tab--active'))));
+    const restartTabAnimation = tab => {
+        if (!tab) return;
+        tab.classList.remove('hero__tab--active');
+        requestAnimationFrame(() => requestAnimationFrame(() => tab.classList.add('hero__tab--active')));
+    };
 
     const armTimer = () => {
         clearInterval(timer);
-        tabs.forEach(t => t.classList.remove('hero__tab--active'));
+        tabs.forEach((tab, i) => {
+            const selected = i === current;
+            tab.classList.toggle('hero__tab--active', selected);
+            tab.setAttribute('aria-selected', String(selected));
+        });
         restartTabAnimation(tabs[current]);
         timer = setInterval(() => goTo((current + 1) % imageSlides.length), 6000);
     };
 
+    const syncHeroA11y = () => {
+        tabs.forEach((tab, i) => {
+            const selected = i === current;
+            tab.setAttribute('aria-selected', String(selected));
+            tab.setAttribute('tabindex', selected ? '0' : '-1');
+            tab.classList.toggle('hero__tab--active', selected);
+        });
+        textSlides.forEach((panel, i) => {
+            const active = i === current;
+            panel.classList.toggle('hero__text--active', active);
+            panel.toggleAttribute('hidden', !active);
+        });
+    };
+
     const goTo = index => {
-        if (!imageSlides.length) return;
+        if (!imageSlides.length || heroBusy) return;
         const next = ((index % imageSlides.length) + imageSlides.length) % imageSlides.length;
-        if (next === current) return armTimer();
+        if (next === current) {
+            restartTabAnimation(tabs[current]);
+            return armTimer();
+        }
+        heroBusy = true;
         slideSets.forEach((set, i) => set[current].classList.remove(activeClasses[i]));
         current = next;
         loadImage(imageSlides[current].querySelector('.hero__img'));
         slideSets.forEach((set, i) => set[current].classList.add(activeClasses[i]));
+        syncHeroA11y();
         armTimer();
+        setTimeout(() => { heroBusy = false; }, 350);
     };
 
-    tabs.forEach(tab => tab.addEventListener('click', () => goTo(+tab.dataset.slide)));
+    tabs.forEach(tab => tab.addEventListener('click', () => {
+        const idx = +tab.dataset.slide;
+        if (idx === current) {
+            restartTabAnimation(tabs[current]);
+            armTimer();
+            return;
+        }
+        goTo(idx);
+    }));
+
+    const tablist = document.querySelector('.hero__progress');
+    tablist?.addEventListener('keydown', e => {
+        if (!tabs.length) return;
+        const key = e.key;
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return;
+        e.preventDefault();
+        let next = current;
+        if (key === 'ArrowRight') next = (current + 1) % tabs.length;
+        else if (key === 'ArrowLeft') next = (current - 1 + tabs.length) % tabs.length;
+        else if (key === 'Home') next = 0;
+        else if (key === 'End') next = tabs.length - 1;
+        goTo(next);
+        tabs[next]?.focus();
+    });
     if (imageSlides.length) {
+        syncHeroA11y();
         armTimer();
         (requestIdleCallback ?? (cb => setTimeout(cb, 1500)))(() => loadImage(imageSlides[1]?.querySelector('.hero__img[data-src]')), requestIdleCallback ? { timeout: 2000 } : undefined);
     }
@@ -1117,7 +1249,19 @@ const initGalleryCarousel = () => {
                 btn.dataset.value = opt.value;
                 btn.setAttribute('aria-selected', String(hidden.value === opt.value));
                 btn.classList.toggle('is-selected', hidden.value === opt.value);
-                btn.innerHTML = `<span class="product-row__label"><span class="product-row__name">${opt.name}</span><span class="product-row__sep"> — </span><span class="product-row__cn">${opt.cn}</span></span>`;
+                const label = document.createElement('span');
+                label.className = 'product-row__label';
+                const nameEl = document.createElement('span');
+                nameEl.className = 'product-row__name';
+                nameEl.textContent = opt.name;
+                const sepEl = document.createElement('span');
+                sepEl.className = 'product-row__sep';
+                sepEl.textContent = ' — ';
+                const cnEl = document.createElement('span');
+                cnEl.className = 'product-row__cn';
+                cnEl.textContent = opt.cn;
+                label.append(nameEl, sepEl, cnEl);
+                btn.appendChild(label);
                 const selectOption = e => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1246,11 +1390,16 @@ const initGalleryCarousel = () => {
     }) : null;
 
     const parseQuantity = value => {
+        const fromApi = window.__quoteConstraints?.parseQty(value);
+        if (fromApi !== null && fromApi !== undefined) return fromApi;
+        const max = window.__quoteConstraints?.QTY?.max ?? 10000;
         const n = parseInt(String(value ?? '1'), 10);
-        return Number.isFinite(n) && n >= 1 && n <= 999 ? n : 1;
+        return Number.isFinite(n) && n >= 1 && n <= max ? n : 1;
     };
 
-    const isValidDim = value => {
+    const isValidDim = (value, kind = 'width') => {
+        const api = window.__quoteConstraints;
+        if (api) return api.isValidDim(value, kind);
         const n = parseFloat(value);
         return Number.isFinite(n) && n > 0;
     };
@@ -1276,7 +1425,7 @@ const initGalleryCarousel = () => {
 
     const isEntryComplete = () => {
         syncQuoteHiddenFields();
-        if (!isValidDim(readDimValue(qfWidth)) || !isValidDim(readDimValue(qfHeight))) return false;
+        if (!isValidDim(readDimValue(qfWidth), 'width') || !isValidDim(readDimValue(qfHeight), 'height')) return false;
         const product = getProductValue();
         if (!product && !isGlassEntry('')) return false;
         if (isGlassEntry(product)) {
@@ -1292,8 +1441,8 @@ const initGalleryCarousel = () => {
     const getMissingEntryFields = () => {
         syncQuoteHiddenFields();
         const missing = [];
-        if (!isValidDim(readDimValue(qfWidth))) missing.push('width');
-        if (!isValidDim(readDimValue(qfHeight))) missing.push('height');
+        if (!isValidDim(readDimValue(qfWidth), 'width')) missing.push('width');
+        if (!isValidDim(readDimValue(qfHeight), 'height')) missing.push('height');
         const product = getProductValue();
         if (!product && !isGlassEntry('')) missing.push('product');
         else if (isGlassEntry(product)) {
@@ -1596,8 +1745,8 @@ const initGalleryCarousel = () => {
         if (!isEntryComplete() || inquiryItems.length >= MAX_QUOTE_ITEMS) return false;
         const product = getProductValue();
         const base = {
-            width: readDimValue(qfWidth),
-            height: readDimValue(qfHeight),
+            width: window.__quoteConstraints?.parseDim(readDimValue(qfWidth), 'width') ?? readDimValue(qfWidth),
+            height: window.__quoteConstraints?.parseDim(readDimValue(qfHeight), 'height') ?? readDimValue(qfHeight),
             product,
             quantity: parseQuantity(qfQuantity?.value)
         };
@@ -1725,7 +1874,7 @@ const initGalleryCarousel = () => {
     }
 
     qfQuantity?.addEventListener('input', () => {
-        let cleaned = qfQuantity.value.replace(/\D/g, '').slice(0, 3);
+        let cleaned = qfQuantity.value.replace(/\D/g, '').slice(0, 5);
         if (cleaned && parseInt(cleaned, 10) < 1) cleaned = '1';
         if (qfQuantity.value !== cleaned) qfQuantity.value = cleaned;
         scheduleAddBtnUpdate();
@@ -1932,6 +2081,11 @@ const initGalleryCarousel = () => {
             if (!name || !quoteForm.email.value.trim() || !phone) {
                 setFormStatus('Name, email, and phone are required.', 'error');
                 return void (!name ? quoteForm.name : !quoteForm.email.value.trim() ? quoteForm.email : quoteForm.phone).focus();
+            }
+
+            if (window.__quoteConstraints && !window.__quoteConstraints.isValidPhone(phone)) {
+                setFormStatus('Enter a valid phone number (at least 10 digits).', 'error');
+                return void quoteForm.phone.focus();
             }
 
             const emailCheck = await verifyQuoteEmail({ quiet: false });

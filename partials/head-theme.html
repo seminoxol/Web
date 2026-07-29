@@ -1,9 +1,16 @@
     <script>
         try {
             const t = localStorage.getItem('theme');
-            if (t) document.documentElement.setAttribute('data-theme', t);
+            if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
         } catch (_) {}
         (function () {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (isIOS) {
+                document.documentElement.classList.add('ios-ui');
+            } else {
+                document.documentElement.classList.add('use-content-visibility');
+            }
             if (/iPad|iPhone|iPod/.test(navigator.userAgent)
                 || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
                 || 'ontouchstart' in window

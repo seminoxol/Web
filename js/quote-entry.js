@@ -174,12 +174,16 @@
         return String(el.value ?? '').replace(/[^\d.]/g, '').trim();
     };
 
-    const validDim = v => {
+    const validDim = (v, kind) => {
+        const api = window.__quoteConstraints;
+        if (api) return api.isValidDim(v, kind);
         const n = parseFloat(v);
         return Number.isFinite(n) && n > 0;
     };
 
     const parseQty = v => {
+        const fromApi = window.__quoteConstraints?.parseQty(v);
+        if (fromApi !== null && fromApi !== undefined) return fromApi;
         const n = parseInt(String(v ?? '1'), 10);
         return Number.isFinite(n) && n >= 1 && n <= 999 ? n : 1;
     };
@@ -219,8 +223,8 @@
         captureAllSelects();
         syncHiddens();
         const missing = [];
-        if (!validDim(readDim(IDS.width))) missing.push('width');
-        if (!validDim(readDim(IDS.height))) missing.push('height');
+        if (!validDim(readDim(IDS.width), 'width')) missing.push('width');
+        if (!validDim(readDim(IDS.height), 'height')) missing.push('height');
         const product = getProduct();
         if (!product) missing.push('product');
         else if (isGlassMode()) {
@@ -329,13 +333,11 @@
         if (!btn) return;
         syncHiddens();
         const ready = isComplete();
-        const touch = isTouchUI();
         btn.disabled = false;
         btn.removeAttribute('disabled');
         btn.setAttribute('aria-disabled', ready ? 'false' : 'true');
-        // On touch: always look tappable — iOS often shows filled selects before .value updates.
-        btn.classList.toggle('qf__add-item--inactive', touch ? false : !ready);
-        btn.classList.toggle('qf__add-item--ready', touch ? true : ready);
+        btn.classList.toggle('qf__add-item--inactive', !ready);
+        btn.classList.toggle('qf__add-item--ready', ready);
         const msg = missingMessage();
         if (!ready && msg) setHint(msg, '');
         else if (ready) setHint('', '');
@@ -360,8 +362,8 @@
         if (!isComplete()) return false;
         const product = getProduct();
         const base = {
-            width: readDim(IDS.width),
-            height: readDim(IDS.height),
+            width: window.__quoteConstraints?.parseDim(readDim(IDS.width), 'width') ?? readDim(IDS.width),
+            height: window.__quoteConstraints?.parseDim(readDim(IDS.height), 'height') ?? readDim(IDS.height),
             product,
             quantity: parseQty($(IDS.quantity)?.value)
         };

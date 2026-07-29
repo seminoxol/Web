@@ -8,9 +8,16 @@
     <script>
         try {
             const t = localStorage.getItem('theme');
-            if (t) document.documentElement.setAttribute('data-theme', t);
+            if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
         } catch (_) {}
         (function () {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (isIOS) {
+                document.documentElement.classList.add('ios-ui');
+            } else {
+                document.documentElement.classList.add('use-content-visibility');
+            }
             if (/iPad|iPhone|iPod/.test(navigator.userAgent)
                 || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
                 || 'ontouchstart' in window
@@ -183,7 +190,7 @@
         <div class="wrap hero__body">
             <div class="hero__copy">
                 <div class="hero__slides-text" aria-live="polite">
-                    <div class="hero__text hero__text--active">
+                    <div class="hero__text hero__text--active" id="hero-slide-0" role="tabpanel" aria-labelledby="hero-tab-0">
                         <p class="eyebrow">Scarborough's Glass Manufacturer · Serving the GTA</p>
                         <h1 class="hero__title">Custom glass for<br><em>contractors &amp; builders.</em></h1>
                         <p class="hero__lead">IGUs, tempered, frosted, custom-shaped glass &amp; spacers — manufactured in-house in Scarborough with 7-day GTA delivery.</p>
@@ -194,7 +201,7 @@
                             <li>Residential &amp; Commercial</li>
                         </ul>
                     </div>
-                    <div class="hero__text">
+                    <div class="hero__text" id="hero-slide-1" role="tabpanel" aria-labelledby="hero-tab-1" hidden>
                         <p class="eyebrow">Promotional Pricing — Limited Time</p>
                         <h2 class="hero__title">Promotional<br><em>pricing now live.</em></h2>
                         <p class="hero__lead">Special rates on IGUs and custom shaped glass for GTA contractors and homeowners. Request a free estimate today.</p>
@@ -214,12 +221,12 @@
             </div>
 
             <div class="hero__meta">
-                <div class="hero__progress">
-                    <button class="hero__tab hero__tab--active" data-slide="0">
+                <div class="hero__progress" role="tablist" aria-label="Hero slides">
+                    <button type="button" class="hero__tab hero__tab--active" id="hero-tab-0" role="tab" aria-selected="true" aria-controls="hero-slide-0" data-slide="0">
                         <span class="hero__tab-label">Expertise</span>
                         <span class="hero__tab-bar"></span>
                     </button>
-                    <button class="hero__tab" data-slide="1">
+                    <button type="button" class="hero__tab" id="hero-tab-1" role="tab" aria-selected="false" aria-controls="hero-slide-1" data-slide="1">
                         <span class="hero__tab-label">Promotion</span>
                         <span class="hero__tab-bar"></span>
                     </button>
@@ -541,17 +548,7 @@
 
             <div class="gallery__footer" id="galleryFooter">
                 <p class="gallery__status" id="galleryStatus" aria-live="polite">Showing 1–1 of 9</p>
-                <div class="gallery__dots" id="galleryDots" role="group" aria-label="Gallery pages">
-                    <button type="button" class="gallery__dot gallery__dot--active" aria-label="Go to page 1"></button>
-                    <button type="button" class="gallery__dot" aria-label="Go to page 2"></button>
-                    <button type="button" class="gallery__dot" aria-label="Go to page 3"></button>
-                    <button type="button" class="gallery__dot" aria-label="Go to page 4"></button>
-                    <button type="button" class="gallery__dot" aria-label="Go to page 5"></button>
-                    <button type="button" class="gallery__dot" aria-label="Go to page 6"></button>
-                    <button type="button" class="gallery__dot" aria-label="Go to page 7"></button>
-                    <button type="button" class="gallery__dot" aria-label="Go to page 8"></button>
-                    <button type="button" class="gallery__dot" aria-label="Go to page 9"></button>
-                </div>
+                <div class="gallery__dots" id="galleryDots" role="group" aria-label="Gallery pages"></div>
             </div>
         </div>
     </section>
@@ -608,23 +605,23 @@
                     <div class="qf__row qf__row--two">
                         <div class="qf__field">
                             <label for="qf-name">Full Name <span class="qf__req">*</span></label>
-                            <input type="text" id="qf-name" name="name" placeholder="John Smith" required>
+                            <input type="text" id="qf-name" name="name" placeholder="John Smith" maxlength="100" required>
                         </div>
                         <div class="qf__field">
                             <label for="qf-company">Company</label>
-                            <input type="text" id="qf-company" name="company" placeholder="ABC Windows Inc.">
+                            <input type="text" id="qf-company" name="company" placeholder="ABC Windows Inc." maxlength="100">
                         </div>
                     </div>
 
                     <div class="qf__row qf__row--two">
                         <div class="qf__field">
                             <label for="qf-email">Email <span class="qf__req">*</span></label>
-                            <input type="email" id="qf-email" name="email" placeholder="you@example.com" required autocomplete="email" inputmode="email" aria-describedby="qf-email-hint">
+                            <input type="email" id="qf-email" name="email" placeholder="you@example.com" maxlength="254" required autocomplete="email" inputmode="email" aria-describedby="qf-email-hint">
                             <p class="qf__field-hint" id="qf-email-hint" hidden></p>
                         </div>
                         <div class="qf__field">
                             <label for="qf-phone">Phone <span class="qf__req">*</span></label>
-                            <input type="tel" id="qf-phone" name="phone" placeholder="416-000-0000" required>
+                            <input type="tel" id="qf-phone" name="phone" placeholder="416-000-0000" maxlength="20" pattern="[\d\s\-().+]{10,20}" required>
                         </div>
                     </div>
 
@@ -633,21 +630,21 @@
                             <div class="qf__field">
                                 <label for="qf-width">Width <span class="qf__unit">(in)</span></label>
                                 <div class="qf__dim-input">
-                                    <input type="text" id="qf-width" inputmode="decimal" autocomplete="off" placeholder="e.g. 36">
+                                    <input type="number" id="qf-width" inputmode="decimal" autocomplete="off" placeholder="e.g. 36" min="1" max="240" step="0.125">
                                     <span class="qf__dim-suffix" aria-hidden="true">in</span>
                                 </div>
                             </div>
                             <div class="qf__field">
                                 <label for="qf-height">Height <span class="qf__unit">(in)</span></label>
                                 <div class="qf__dim-input">
-                                    <input type="text" id="qf-height" inputmode="decimal" autocomplete="off" placeholder="e.g. 60">
+                                    <input type="number" id="qf-height" inputmode="decimal" autocomplete="off" placeholder="e.g. 60" min="1" max="144" step="0.125">
                                     <span class="qf__dim-suffix" aria-hidden="true">in</span>
                                 </div>
                             </div>
                         </div>
                         <div class="qf__field qf__field--qty">
                             <label for="qf-quantity">Quantity</label>
-                            <input type="text" id="qf-quantity" inputmode="numeric" autocomplete="off" value="1" placeholder="1">
+                            <input type="number" id="qf-quantity" inputmode="numeric" autocomplete="off" value="1" min="1" max="10000" step="1" placeholder="1">
                         </div>
                         <div class="qf__row qf__row--two">
                             <div class="qf__field">
@@ -979,6 +976,7 @@
                             if (!form || form.dataset.submitGuard === '1') return;
                             form.dataset.submitGuard = '1';
                             form.addEventListener('submit', function (e) {
+                                if (window.__quoteSubmitManaged) return;
                                 e.preventDefault();
                                 e.stopPropagation();
                                 if (typeof window.__quoteSubmitHandler === 'function') {
@@ -994,24 +992,8 @@
                                     status.textContent = 'Sending your request…';
                                     status.className = 'qf__status qf__status--info';
                                 }
-                                setTimeout(function () {
-                                    if (form.dataset.submitQueued !== '1') return;
-                                    if (typeof window.__quoteSubmitHandler === 'function') {
-                                        delete form.dataset.submitQueued;
-                                        window.__quoteSubmitHandler(new Event('submit'));
-                                        return;
-                                    }
-                                    delete form.dataset.submitQueued;
-                                    if (submitText) submitText.textContent = 'Send Quote Request';
-                                    if (status) {
-                                        status.hidden = false;
-                                        status.textContent = 'Form is still loading. Please wait a moment and try again.';
-                                        status.className = 'qf__status qf__status--error';
-                                    }
-                                }, 8000);
                             }, true);
                         }
-
                         if (document.readyState === 'loading') {
                             document.addEventListener('DOMContentLoaded', function () {
                                 wire();
@@ -1033,7 +1015,7 @@
 
                     <div class="qf__field">
                         <label for="qf-message">Additional Notes</label>
-                        <textarea id="qf-message" name="message" rows="4" placeholder="Project details, timeline, delivery requirements..."></textarea>
+                        <textarea id="qf-message" name="message" rows="4" maxlength="2000" placeholder="Project details, timeline, delivery requirements..."></textarea>
                     </div>
 
                     <div class="qf__consent">
@@ -1108,6 +1090,7 @@
     <!-- Footer -->
     <!-- @include footer -->
 
+    <script src="/js/quote-constraints.js?v={{ASSET_VERSION}}" defer></script>
     <script src="/js/quote-entry.js?v={{ASSET_VERSION}}" defer></script>
     <script src="/js/quote-submit.js?v={{ASSET_VERSION}}" defer></script>
     <script src="/js/site.js?v={{ASSET_VERSION}}" defer></script>

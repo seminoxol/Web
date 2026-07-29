@@ -8,7 +8,7 @@
     <script>
         try {
             const t = localStorage.getItem('theme');
-            if (t) document.documentElement.setAttribute('data-theme', t);
+            if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
         } catch (_) {}
     </script>
     <title>FAQ — PCI Glass | Insulated Glass Questions | Scarborough, GTA</title>

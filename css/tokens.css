@@ -39,6 +39,11 @@
     --space-block: clamp(28px, 4vw, 44px);
     --space-element: clamp(16px, 2vw, 24px);
 
+    /* Z-index scale */
+    --z-grain: 50;
+    --z-theme-overlay: 100;
+    --z-skip-link: 110;
+
     /* Section page gradients */
     --grad-body:     var(--navy-deep);
     --grad-marquee:  var(--navy-deep);
