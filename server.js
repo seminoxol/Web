@@ -221,6 +221,14 @@ app.get('/glass/', glassPage);
 app.get('/glass/index.html', glassPage);
 app.get('/glass', (_, res) => res.redirect(301, '/glass/'));
 app.get('/glass.html', (_, res) => res.redirect(301, '/glass/'));
+const windowsPage = (_, res) => sendHtml(res, path.join('windows', 'index.html'), {
+    header: { solid: true, activePage: 'windows' },
+    footer: { activePage: 'windows' }
+});
+app.get('/windows/', windowsPage);
+app.get('/windows/index.html', windowsPage);
+app.get('/windows', (_, res) => res.redirect(301, '/windows/'));
+app.get('/windows.html', (_, res) => res.redirect(301, '/windows/'));
 const termsPage = (_, res) => sendHtml(res, path.join('terms', 'index.html'), {
     header: { solid: true },
     footer: { activePage: 'terms' }
@@ -244,6 +252,7 @@ app.get('*', (req, res) => {
     if (base.endsWith('.html')) {
         if (base === 'faq.html') return res.redirect(301, '/faq/');
         if (base === 'glass.html') return res.redirect(301, '/glass/');
+        if (base === 'windows.html') return res.redirect(301, '/windows/');
         if (base === 'terms.html') return res.redirect(301, '/terms/');
         if (base === 'privacy.html') return res.redirect(301, '/privacy/');
         if (ROOT_HTML_ALLOWLIST.has(base)) {

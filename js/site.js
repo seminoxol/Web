@@ -593,11 +593,26 @@ const initGalleryCarousel = () => {
         }
     };
 
+    const closeNavDropdown = item => {
+        const trigger = item.querySelector('.nav__link--has-menu');
+        const menuId = trigger?.getAttribute('aria-controls');
+        const menu = (menuId && document.getElementById(menuId)) || item.querySelector('.nav__dropdown');
+        item.classList.remove('is-open');
+        menu?.classList.remove('is-open');
+        trigger?.setAttribute('aria-expanded', 'false');
+        if (menu && menu.parentElement !== item) {
+            item.appendChild(menu);
+            menu.style.removeProperty('top');
+            menu.style.removeProperty('left');
+        }
+    };
+
     const setMenuOpen = open => {
         nav?.classList.toggle('nav--open', open);
         menuBtn?.classList.toggle('menu-btn--open', open);
         menuBtn?.setAttribute('aria-expanded', String(open));
         menuBtn?.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        if (!open) nav?.querySelectorAll('.nav__item--dropdown.is-open').forEach(closeNavDropdown);
         if (isMobileNav()) {
             nav?.setAttribute('aria-hidden', String(!open));
             if (open) nav?.removeAttribute('inert');
@@ -717,13 +732,11 @@ const initGalleryCarousel = () => {
         toggleMenu();
     });
     nav?.querySelectorAll('.nav__link, .nav__dropdown-link').forEach(link => {
+        if (link.classList.contains('nav__link--has-menu')) return;
         link.addEventListener('click', e => {
             const href = link.getAttribute('href');
             const wasOpen = nav?.classList.contains('nav--open');
             setMenuOpen(false);
-            link.closest('.nav__item--dropdown')?.classList.remove('is-open');
-            const trigger = link.closest('.nav__item--dropdown')?.querySelector('.nav__link--has-menu');
-            trigger?.setAttribute('aria-expanded', 'false');
             if (!wasOpen || !href) return;
 
             try {
@@ -745,22 +758,101 @@ const initGalleryCarousel = () => {
 
     nav?.querySelectorAll('.nav__item--dropdown').forEach(item => {
         const trigger = item.querySelector('.nav__link--has-menu');
-        if (!trigger) return;
+        const menu = item.querySelector('.nav__dropdown');
+        if (!trigger || !menu) return;
+
+        let closeTimer = 0;
+        const menuId = menu.id;
+
+        const placeMenu = () => {
+            // Portal to body so header/body overflow cannot clip the panel.
+            if (menu.parentElement !== document.body) {
+                document.body.appendChild(menu);
+            }
+            const rect = trigger.getBoundingClientRect();
+            const headerEl = document.getElementById('header');
+            const headerBottom = headerEl ? headerEl.getBoundingClientRect().bottom : rect.bottom;
+            const menuWidth = Math.max(menu.offsetWidth, 200);
+            const left = Math.min(
+                Math.max(12, rect.left + rect.width / 2 - menuWidth / 2),
+                window.innerWidth - menuWidth - 12
+            );
+            const top = Math.max(rect.bottom, headerBottom) + 10;
+            menu.style.top = `${Math.round(top)}px`;
+            menu.style.left = `${Math.round(left)}px`;
+        };
+
+        const restoreMenu = () => {
+            if (menu.parentElement === item) return;
+            item.appendChild(menu);
+            menu.style.removeProperty('top');
+            menu.style.removeProperty('left');
+        };
+
+        // Mobile renders the panel inline as an accordion; desktop portals it to <body>.
         const setOpen = open => {
             item.classList.toggle('is-open', open);
+            menu.classList.toggle('is-open', open);
             trigger.setAttribute('aria-expanded', String(open));
+            if (open && !isMobileNav()) placeMenu();
+            else restoreMenu();
         };
-        item.addEventListener('mouseenter', () => {
-            if (!isMobileNav()) setOpen(true);
-        });
+
+        const cancelClose = () => {
+            window.clearTimeout(closeTimer);
+            closeTimer = 0;
+        };
+
+        const scheduleClose = () => {
+            cancelClose();
+            closeTimer = window.setTimeout(() => setOpen(false), 180);
+        };
+
+        const openDesktop = () => {
+            if (isMobileNav()) return;
+            cancelClose();
+            setOpen(true);
+        };
+
+        item.addEventListener('mouseenter', openDesktop);
         item.addEventListener('mouseleave', () => {
-            if (!isMobileNav()) setOpen(false);
+            if (!isMobileNav()) scheduleClose();
         });
-        item.addEventListener('focusin', () => {
-            if (!isMobileNav()) setOpen(true);
+        menu.addEventListener('mouseenter', openDesktop);
+        menu.addEventListener('mouseleave', () => {
+            if (!isMobileNav()) scheduleClose();
         });
+        item.addEventListener('focusin', openDesktop);
         item.addEventListener('focusout', e => {
-            if (!isMobileNav() && !item.contains(e.relatedTarget)) setOpen(false);
+            if (isMobileNav()) return;
+            const next = e.relatedTarget;
+            if (next && (item.contains(next) || menu.contains(next))) return;
+            scheduleClose();
+        });
+        trigger.addEventListener('click', e => {
+            e.preventDefault();
+            cancelClose();
+            setOpen(trigger.getAttribute('aria-expanded') !== 'true');
+        });
+        window.addEventListener('resize', () => {
+            if (isMobileNav()) restoreMenu();
+            else if (item.classList.contains('is-open')) placeMenu();
+        }, { passive: true });
+        window.addEventListener('scroll', () => {
+            if (!isMobileNav() && item.classList.contains('is-open')) placeMenu();
+        }, { passive: true });
+
+        // Keep aria relationship if menu moves to body.
+        if (menuId) trigger.setAttribute('aria-controls', menuId);
+    });
+
+    document.addEventListener('click', e => {
+        if (isMobileNav()) return;
+        nav?.querySelectorAll('.nav__item--dropdown.is-open').forEach(item => {
+            const menuId = item.querySelector('.nav__link--has-menu')?.getAttribute('aria-controls');
+            const menu = (menuId && document.getElementById(menuId)) || item.querySelector('.nav__dropdown');
+            if (item.contains(e.target) || menu?.contains(e.target)) return;
+            closeNavDropdown(item);
         });
     });
 
@@ -923,6 +1015,7 @@ const initGalleryCarousel = () => {
             { value: 'Double Sliding', name: 'Double Sliding', cn: '双推拉窗' },
             { value: 'Single Hung', name: 'Single Hung', cn: '单悬窗' },
             { value: 'Double Hung', name: 'Double Hung', cn: '双悬窗' },
+            { value: 'Egress', name: 'Egress', cn: '逃生窗' },
             { value: 'Fixed', name: 'Fixed', cn: '固定窗' }
         ],
         Doors: [
