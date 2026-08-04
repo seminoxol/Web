@@ -47,8 +47,11 @@ app.use(helmet({
             connectSrc: [
                 "'self'",
                 'https://*.google-analytics.com',
+                'https://google-analytics.com',
                 'https://*.analytics.google.com',
+                'https://analytics.google.com',
                 'https://www.googletagmanager.com',
+                'https://www.google.com',
             ],
         }
     }
